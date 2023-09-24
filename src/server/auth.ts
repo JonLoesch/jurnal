@@ -1,4 +1,4 @@
-import { DrizzleAdapter } from "@auth/drizzle-adapter";
+import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { type GetServerSidePropsContext } from "next";
 import {
   getServerSession,
@@ -9,7 +9,6 @@ import DiscordProvider from "next-auth/providers/discord";
 
 import { env } from "~/env.mjs";
 import { db } from "~/server/db";
-import { mysqlTable } from "~/server/db/schema";
 
 /**
  * Module augmentation for `next-auth` types. Allows us to add custom properties to the `session`
@@ -19,11 +18,11 @@ import { mysqlTable } from "~/server/db/schema";
  */
 declare module "next-auth" {
   interface Session extends DefaultSession {
-    user: {
+    user: DefaultSession["user"] & {
       id: string;
       // ...other properties
       // role: UserRole;
-    } & DefaultSession["user"];
+    };
   }
 
   // interface User {
@@ -47,7 +46,7 @@ export const authOptions: NextAuthOptions = {
       },
     }),
   },
-  adapter: DrizzleAdapter(db, mysqlTable),
+  adapter: PrismaAdapter(db),
   providers: [
     // DiscordProvider({
     //   clientId: env.DISCORD_CLIENT_ID,
