@@ -1,7 +1,6 @@
 import { FC } from "react"
 
 export const Notifications: FC = () => {
-    console.log('asdf');
-    return <div>asdfasdf</div>;
+    return null;
 }
 export default Notifications;
