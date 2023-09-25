@@ -1,11 +1,9 @@
 import { ArrowDownIcon, ArrowUpIcon } from "@heroicons/react/24/outline";
-import { FC } from "react";
+import Link from "next/link";
+import { FC, PropsWithChildren } from "react";
 import { data } from "~/lib/fakeData";
 
-function classNames(...classes: string[]) {
-  return classes.filter(Boolean).join(" ");
-}
-const Page: FC = () => {
+export const GraphLayout: FC<PropsWithChildren> = props => {
   const { metrics } = data;
 
   return (
@@ -62,19 +60,28 @@ const Page: FC = () => {
               &nbsp;
               <div className="absolute inset-x-0 bottom-0 bg-gray-50 px-4 py-4 sm:px-6">
                 <div className="text-sm">
-                  <a
-                    href="#"
+                  <Link
+                    href={{
+                        pathname: '/graphs/[metric]',
+                        query: {
+                            metric: item.name
+                        }
+                    }}
                     className="font-medium text-indigo-600 hover:text-indigo-500"
                   >
                     View all<span className="sr-only"> {item.name} stats</span>
-                  </a>
+                  </Link>
                 </div>
               </div>
             </dd>
           </div>
         ))}
       </dl>
+      {props.children}
     </div>
   );
 };
-export default Page;
+export default function Page() {
+    return <GraphLayout/>;
+}
+

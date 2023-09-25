@@ -29,6 +29,15 @@ interface Theme {
 
 type MyMetrics = 'mood' | 'sleep' | 'eat' | 'move' | 'talk' | 'made';
 
+const mymets: Record<MyMetrics, number> = {
+    mood: 9,
+    sleep: 7,
+    eat: 7,
+    move: 8,
+    talk: 10,
+    made: 7,
+}
+
 export const data = compile({
     'Sep 23': {
         mood: 9,
@@ -55,7 +64,9 @@ export const data = compile({
     sleep: 'Slept well',
     talk: 'Socially Active',
 });
-
+function randomMetrics(): Record<MyMetrics, number> {
+    return mapObject(mymets, () => Math.floor(Math.random() * 11));
+}
 function compile(days: Record<string, Partial<Record<MyMetrics, number>>>, metrics: Record<MyMetrics, string>): Data {
     const mets = mapObject(metrics, m => {
         const values: Value[] = [];
@@ -75,15 +86,26 @@ function compile(days: Record<string, Partial<Record<MyMetrics, number>>>, metri
             addValue(x: Value) { values.push(x); }
         }
     });
-    for (const date in days) {
-        for (const m in days[date]) {
+    for (let q = 10; q < 23; q++) {
+        const date = `Sep ${q}`;
+        const values: Value[] = [];
+        ents[date] = {
+            date,
+            posts: () => [],
+            values: () => values,
+            addValue(x: Value) { values.push(x); }
+        }
+    }
+    for (const date in ents) {
+        for (const m in mymets) {
             const v : Value = {
                 entry: () => ents[date]!,
                 metric: () => mets[m as MyMetrics]!,
-                zeroToTen: days[date]![m as MyMetrics]!,
+                zeroToTen: (days[date] ?? randomMetrics())[m as MyMetrics]!,
             }
             ents[date]?.addValue(v);
             mets[m as MyMetrics]?.addValue(v);
+            console.log(date, m)
         }
     }
     return {
@@ -91,6 +113,8 @@ function compile(days: Record<string, Partial<Record<MyMetrics, number>>>, metri
         metrics: Object.values(mets),
     }
 }
+// console.log(data);
+console.log(data.metrics[0]?.values());
 
 interface Data {
     entries: Entry[]
