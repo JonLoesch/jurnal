@@ -2,7 +2,7 @@ import { HandThumbUpIcon } from "@heroicons/react/24/outline";
 import { FC } from "react";
 import { data } from "~/lib/fakeData";
 
-export const Posts: FC = () => {
+const Page: FC = () => {
   const { entries } = data;
 
   return (
@@ -53,4 +53,4 @@ export const Posts: FC = () => {
     </div>
   );
 };
-export default Posts;
+export default Page;
