@@ -3,7 +3,7 @@ import { FC } from "react";
 const Page: FC = () => {
     return <ul className="list-disc pl-10">
         <li className="line-through">Prism Schema</li>
-        <li>Data over TRPC</li>
+        <li className="line-through">Data over TRPC</li>
         <li>Prism production migrations</li>
         <li>Guidlines for values in metrics</li>
         <li>Entries with optional post content</li>

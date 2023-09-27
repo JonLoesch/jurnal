@@ -1,28 +1,38 @@
 import { ArrowDownIcon, ArrowUpIcon } from "@heroicons/react/24/outline";
+import { Prisma } from "@prisma/client";
+import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import Link from "next/link";
 import { FC, PropsWithChildren } from "react";
-import { data } from "~/lib/fakeData";
+import { getMetricMetadata } from "~/lib/getMetricMetadata";
+import { db } from "~/server/db";
 
-export const GraphLayout: FC<PropsWithChildren> = props => {
-  const { metrics } = data;
+export const GraphLayout: FC<
+  PropsWithChildren<{
+    metrics: Array<
+      Prisma.MetricGetPayload<true> & {
+        latestValue?: number;
+      }
+    >;
+  }>
+> = (props) => {
+  const { metrics } = props;
 
   return (
     <div>
-
-      <dl className="mt-5 grid grid-cell-90 gap-5">
+      <dl className="grid-cell-90 mt-5 grid gap-5">
         {metrics.map((item) => (
           <div
-            key={item.name}
+            key={item.key}
             className="relative overflow-hidden rounded-lg bg-white px-4 pb-12 pt-5 shadow sm:px-6 sm:pt-6"
           >
             <dt>
-              <div className="absolute rounded-md bg-indigo-500 p-3 h-12 w-12 flex">
-                <span className=" text-white font-bold text-center w-full">
-                  {item.values().findLast(() => true)?.zeroToTen}
+              <div className="absolute flex h-12 w-12 rounded-md bg-indigo-500 p-3">
+                <span className=" w-full text-center font-bold text-white">
+                  {item.latestValue}
                 </span>
               </div>
               <p className="ml-16 truncate text-sm font-medium text-gray-500">
-                {item.name}
+                {item.key}
               </p>
             </dt>
             <dd className="ml-16 flex items-baseline pb-6 sm:pb-7">
@@ -62,10 +72,10 @@ export const GraphLayout: FC<PropsWithChildren> = props => {
                 <div className="text-sm">
                   <Link
                     href={{
-                        pathname: '/graphs/[metric]',
-                        query: {
-                            metric: item.name
-                        }
+                      pathname: "/graphs/[metric]",
+                      query: {
+                        metric: item.key,
+                      },
                     }}
                     className="font-medium text-indigo-600 hover:text-indigo-500"
                   >
@@ -81,7 +91,19 @@ export const GraphLayout: FC<PropsWithChildren> = props => {
     </div>
   );
 };
-export default function Page() {
-    return <GraphLayout/>;
-}
 
+export const getServerSideProps = async (
+  context: GetServerSidePropsContext,
+) => {
+  return {
+    props: {
+      metrics: await getMetricMetadata(),
+    },
+  };
+};
+
+export default function Page(
+  props: InferGetServerSidePropsType<typeof getServerSideProps>,
+) {
+  return <GraphLayout metrics={props.metrics} />;
+}

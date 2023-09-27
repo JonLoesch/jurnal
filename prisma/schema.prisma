@@ -42,6 +42,7 @@ model Value {
 
 model Metric {
     key    String  @id
+    name   String
     values Value[]
     type   String
     goals  Goal[]

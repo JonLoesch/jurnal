@@ -52,7 +52,6 @@ async function main() {
 
   const m = await metrics();
   for (const d of data) {
-    console.log(d);
     const entry = await prisma.entry.findFirstOrThrow({
       where: { date: d.date },
     });
@@ -87,7 +86,7 @@ async function main() {
 }
 
 async function metrics() {
-  async function m(key: string) {
+  async function m(key: string, name: string) {
     return prisma.metric.upsert({
       where: { key },
       update: {
@@ -96,16 +95,17 @@ async function metrics() {
       create: {
         type: "ZeroToTen",
         key,
+        name,
       },
     });
   }
   return {
-    mood: await m("mood"),
-    sleep: await m("sleep"),
-    eat: await m("eat"),
-    move: await m("move"),
-    talk: await m("talk"),
-    made: await m("made"),
+    mood: await m("mood", 'General Mood'),
+    sleep: await m("sleep", 'Slept well'),
+    eat: await m("eat", 'Ate Well'),
+    move: await m("move", 'Excersized'),
+    talk: await m("talk", 'Socially Active'),
+    made: await m("made", 'Was Productive'),
   };
 }
 
