@@ -19,7 +19,7 @@ export const exampleRouter = createTRPCRouter({
     return ctx.db.example.findMany();
   }),
 
-  getSecretMessage: protectedProcedure.query(() => {
-    return "you can now see this secret message!";
+  getSecretMessage: protectedProcedure.query(({ ctx }) => {
+    return `you can now see this secret message, ${ctx.session.user.name}!`;
   }),
 });
