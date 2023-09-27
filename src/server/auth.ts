@@ -44,7 +44,7 @@ export const authOptions: NextAuthOptions = {
       user: {
         ...session.user,
         role: user,
-        isPoster: user.emailVerified && user.email === 'jonloesch@gmail.com',
+        isPoster: user.email === 'jonloesch@gmail.com',
       },
     }),
   },
