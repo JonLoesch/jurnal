@@ -23,6 +23,43 @@ model Example {
     @@index([name])
 }
 
+model Entry {
+    id       Int      @id @default(autoincrement())
+    postText String?
+    date     DateTime @db.Date
+    values   Value[]
+}
+
+model Value {
+    entry     Entry  @relation(fields: [entryId], references: [id])
+    entryId   Int
+    metric    Metric @relation(fields: [metricKey], references: [key])
+    metricKey String
+    value     Float
+
+    @@id([entryId, metricKey])
+}
+
+model Metric {
+    key    String  @id
+    values Value[]
+    type   String
+    goals  Goal[]
+}
+
+model Goal {
+    id        Int     @id @default(autoincrement())
+    theme     Theme?  @relation(fields: [themeId], references: [id])
+    themeId   Int?
+    metric    Metric? @relation(fields: [metricKey], references: [key])
+    metricKey String?
+}
+
+model Theme {
+    id    Int    @id @default(autoincrement())
+    goals Goal[]
+}
+
 // Necessary for Next auth
 model Account {
     id                String  @id @default(cuid())

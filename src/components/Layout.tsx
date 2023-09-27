@@ -25,6 +25,7 @@ const top: TopLevelPage[] = [
   { href: "/posts", title: "All Posts" },
   { href: "/graphs", title: "Graphs" },
   { href: "/notifications", title: "Notifications" },
+  { href: "/todo", title: "Todo list" },
 ];
 
 export const Layout: FC<PropsWithChildren> = (props) => {

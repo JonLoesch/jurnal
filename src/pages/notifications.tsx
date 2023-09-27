@@ -1,6 +1,6 @@
 import { FC } from "react"
 
-export const Notifications: FC = () => {
+const Page: FC = () => {
     return null;
 }
-export default Notifications;
+export default Page;
