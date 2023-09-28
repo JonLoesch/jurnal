@@ -6,8 +6,8 @@ const Page: FC = () => {
         <li className="line-through">Data over TRPC</li>
         <li className="line-through">Prism production migrations</li>
         <li className="line-through">Logins (NextAuth?)</li>
-        <li>Post Create/Edit UI</li>
-        <li>Prism production data</li>
+        <li className="line-through">Post Create/Edit UI</li>
+        <li>Prisma production data</li>
         <li>Guidlines for values in metrics</li>
         <li>Entries with optional post content</li>
         <li>All posts -{"> \"Timeline\""} </li>

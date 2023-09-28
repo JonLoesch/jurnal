@@ -5,13 +5,19 @@ import { useSession } from "next-auth/react";
 import { FC } from "react";
 import { db } from "~/server/db";
 import { LinkToEditPost } from "./posts/edit/[postid]";
+import { api } from "~/utils/api";
+import { useRouter } from "next/router";
 
 export const getServerSideProps = async (
   context: GetServerSidePropsContext,
 ) => {
   return {
     props: {
-      entries: await db.entry.findMany(),
+      entries: await db.entry.findMany({
+        orderBy: {
+          date: 'asc'
+        }
+      }),
     },
   };
 };
@@ -19,6 +25,17 @@ export const getServerSideProps = async (
 const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = ({
   entries,
 }) => {
+  const addPost = api.posts.create.useMutation();
+  const router = useRouter();
+
+  if (addPost.isSuccess) {
+    void router.push({
+      pathname: 'posts/edit/[postid]',
+      query: {
+        postid: addPost.data,
+      }
+    });
+  }
   return (
     <div className="mx-auto mt-12 flow-root max-w-lg">
       <ul role="list" className="-mb-8">
@@ -65,6 +82,14 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = ({
           </li>
         ))}
       </ul>
+
+      <div className='flex justify-end mt-16'>
+        <button className="btn btn-primary" onClick={() => {
+          addPost.mutate();
+        }}>
+          New Post
+        </button>
+      </div>
     </div>
   );
 };
