@@ -40,7 +40,7 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
       }),
       values: await db.metric.findMany({
         orderBy: {
-          sortOrder: 'asc'
+          sortOrder: "asc",
         },
         include: {
           values: {
@@ -148,22 +148,16 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
 export const LinkToEditPost: FC<PropsWithChildren<{ postid: number }>> = (
   props,
 ) => {
-  const session = useSession();
-
-  if (!session.data?.user.isPoster) {
-    return props.children;
-  } else {
-    return (
-      <Link
-        href={{
-          pathname: "/posts/edit/[postid]",
-          query: { postid: props.postid },
-        }}
-      >
-        {props.children}
-      </Link>
-    );
-  }
+  return (
+    <Link
+      href={{
+        pathname: "/posts/edit/[postid]",
+        query: { postid: props.postid },
+      }}
+    >
+      {props.children}
+    </Link>
+  );
 };
 
 export default Page;
