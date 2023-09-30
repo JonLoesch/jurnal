@@ -107,7 +107,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = ({
                               representation: "date",
                             })}
                           >
-                            {format(date, "MMM d")}
+                            {format(date, "EEEEEE MMM d")}
                           </time>
                         </div>
                       </div>

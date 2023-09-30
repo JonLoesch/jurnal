@@ -83,7 +83,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
 
   return (
     <FullPage>
-      <Title>{format(Zoneless.toDate(props.post.date), "MMMM d")}</Title>
+      <Title>{format(Zoneless.toDate(props.post.date), "EEEE MMMM d")}</Title>
       <MainSection>
         <StackedForm.Main
           onSubmit={() => {
