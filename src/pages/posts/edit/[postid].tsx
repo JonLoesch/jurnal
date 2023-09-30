@@ -17,6 +17,7 @@ import dynamic from "next/dynamic";
 import { api } from "~/utils/api";
 import { CheckIcon, CursorArrowRaysIcon } from "@heroicons/react/24/outline";
 import { type DeltaStatic } from "quill";
+import { Zoneless } from "~/lib/ZonelessDate";
 
 const WYSIWYG = dynamic(
   () => import("~/components/WYSIWYG").then((x) => x.WYSIWYG),
@@ -31,13 +32,14 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
     .regex(/^\d+$/)
     .transform(Number)
     .parse(context.query.postid);
+  const {date, ...post} = await db.entry.findUniqueOrThrow({
+    where: {
+      id: postId,
+    },
+  });
   return {
     props: {
-      post: await db.entry.findUniqueOrThrow({
-        where: {
-          id: postId,
-        },
-      }),
+      post: {...post, date: Zoneless.fromDate(date)},
       values: await db.metric.findMany({
         orderBy: {
           sortOrder: "asc",
@@ -81,7 +83,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
 
   return (
     <FullPage>
-      <Title>{format(props.post.date, "MMMM d")}</Title>
+      <Title>{format(Zoneless.toDate(props.post.date), "MMMM d")}</Title>
       <MainSection>
         <StackedForm.Main
           onSubmit={() => {
@@ -161,17 +163,3 @@ export const LinkToEditPost: FC<PropsWithChildren<{ postid: number }>> = (
 };
 
 export default Page;
-
-const Lorem = () => (
-  <>
-    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum nec
-    metus nisl. Donec lectus neque, convallis quis facilisis vitae, bibendum vel
-    lorem. Nam in ultricies justo. Cras bibendum sapien non scelerisque
-    suscipit. Vivamus eu vulputate odio. Etiam vel metus tempor, sodales nunc
-    porttitor, faucibus urna. Interdum et malesuada fames ac ante ipsum primis
-    in faucibus. Pellentesque eleifend nisi id facilisis cursus. Nam mattis, mi
-    et malesuada cursus, sem tellus lobortis ante, vitae molestie magna turpis a
-    lacus. Aliquam mollis id risus quis molestie. Sed lectus purus, fringilla
-    non hendrerit eget, fringilla vitae lacus. Vivamus et lacus nulla.
-  </>
-);

@@ -13,17 +13,18 @@ import { useRouter } from "next/router";
 import PulseIcon from "~/images/heart-pulse-solid.svg";
 import Image from "next/image";
 import { FullPage, MainSection, Title } from "~/components/theme";
+import { Zoneless } from "~/lib/ZonelessDate";
 
 export const getServerSideProps = async (
   context: GetServerSidePropsContext,
 ) => {
   return {
     props: {
-      entries: await db.entry.findMany({
+      entries: (await db.entry.findMany({
         orderBy: {
           date: "asc",
         },
-      }),
+      })).map(({date, ...rest}) => ({...rest, date: Zoneless.fromDate(date)})),
     },
   };
 };
@@ -56,12 +57,13 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = ({
       <MainSection>
         <ul role="list" className="-mb-8">
           {entries.map((entry, index) => {
+            const date = Zoneless.toDate(entry.date);
             const entryType =
               entry.postQuill === null || entry.postQuill === undefined
                 ? "metric_recorded"
                 : "journal_entry";
             return (
-              <li key={getUnixTime(entry.date)}>
+              <li key={getUnixTime(date)}>
                 <LinkToEditPost postid={entry.id}>
                   <div className="relative pb-8">
                     {index !== entries.length - 1 ? (
@@ -101,11 +103,11 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = ({
                         </div>
                         <div className="whitespace-nowrap text-right text-sm text-gray-500">
                           <time
-                            dateTime={formatISO(entry.date, {
+                            dateTime={formatISO(date, {
                               representation: "date",
                             })}
                           >
-                            {format(entry.date, "MMM d")}
+                            {format(date, "MMM d")}
                           </time>
                         </div>
                       </div>

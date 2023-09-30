@@ -5,40 +5,42 @@ import {
   InferGetServerSidePropsType,
 } from "next";
 import { useRouter } from "next/router";
-import {
-  CartesianGrid,
-  Line,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import dynamic from 'next/dynamic'
- 
-const LineChart = dynamic(() => import('recharts').then(x => x.LineChart), { ssr: false })
- 
+import { CartesianGrid, Line, Tooltip, XAxis, YAxis } from "recharts";
+import dynamic from "next/dynamic";
+
+const LineChart = dynamic(() => import("recharts").then((x) => x.LineChart), {
+  ssr: false,
+});
+
 import { z } from "zod";
 import { getMetricMetadata } from "~/lib/getMetricMetadata";
 import { GraphLayout } from "~/pages/graphs";
 import { db } from "~/server/db";
+import { Zoneless } from "~/lib/ZonelessDate";
 
 export const getServerSideProps = async (
   context: GetServerSidePropsContext,
 ) => {
   return {
     props: {
-      values: await db.value.findMany({
-        where: {
-          metricKey: z.string().min(1).parse(context.query.metric),
-        },
-        include: {
-          entry: true,
-        },
-        orderBy: {
-          entry: {
-            date: 'asc'
-          }
-        }
-      }),
+      values: (
+        await db.value.findMany({
+          where: {
+            metricKey: z.string().min(1).parse(context.query.metric),
+          },
+          include: {
+            entry: true,
+          },
+          orderBy: {
+            entry: {
+              date: "asc",
+            },
+          },
+        })
+      ).map(({ entry: { date, ...entry }, ...rest }) => ({
+        ...rest,
+        entry: { ...entry, date: Zoneless.fromDate(date) },
+      })),
       metrics: await getMetricMetadata(),
     },
   };
@@ -54,7 +56,7 @@ export default function Page(
         width={400}
         height={400}
         data={props.values.map((v) => ({
-          date: v.entry.date,
+          date: Zoneless.toDate(v.entry.date),
           zeroToTen: v.value,
         }))}
       >
