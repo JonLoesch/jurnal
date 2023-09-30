@@ -1,7 +1,6 @@
 import {
-  HandThumbDownIcon,
-  HandThumbUpIcon,
-} from "@heroicons/react/24/outline";
+  BookOpenIcon,
+} from "@heroicons/react/24/solid";
 import { format, formatISO, getUnixTime } from "date-fns";
 import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import { useSession } from "next-auth/react";
@@ -90,7 +89,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = ({
                             />
                           )}
                           {entryType === "journal_entry" && (
-                            <HandThumbUpIcon
+                            <BookOpenIcon
                               fill="currentColor"
                               className="h-5 w-5 text-white"
                               aria-hidden="true"
