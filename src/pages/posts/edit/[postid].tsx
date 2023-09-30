@@ -32,14 +32,14 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
     .regex(/^\d+$/)
     .transform(Number)
     .parse(context.query.postid);
-  const {date, ...post} = await db.entry.findUniqueOrThrow({
+  const { date, ...post } = await db.entry.findUniqueOrThrow({
     where: {
       id: postId,
     },
   });
   return {
     props: {
-      post: {...post, date: Zoneless.fromDate(date)},
+      post: { ...post, date: Zoneless.fromDate(date) },
       values: await db.metric.findMany({
         orderBy: {
           sortOrder: "asc",
@@ -72,9 +72,12 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
   }
   // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
   const postJson: DeltaStatic | undefined = props.post.postQuill as any;
-  const [getPostJson, setPostJson] = useState<() => DeltaStatic | undefined>(
-    () => () => postJson,
-  );
+  const [getPostJson, setPostJson] = useState<
+    () => {
+      full: DeltaStatic | undefined;
+      firstLine: string | undefined;
+    }
+  >(() => () => ({ full: postJson, firstLine: undefined }));
 
   const session = useSession();
   const isPoster = session.data?.user.isPoster ?? false;
@@ -87,10 +90,12 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
       <MainSection>
         <StackedForm.Main
           onSubmit={() => {
+            const postJson = getPostJson();
             void editPost
               .mutateAsync({
                 postId: props.post.id,
-                postJson: getPostJson(),
+                postJson: postJson.full,
+                firstLine: postJson.firstLine,
                 values: Object.fromEntries(values.map((v) => [v.key, v.value])),
               })
               .then(() => setDirty(false));
@@ -104,7 +109,6 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
               <WYSIWYG
                 defaultValue={postJson}
                 onChange={(fetch) => {
-                  console.log(fetch);
                   setPostJson(() => fetch);
                   setDirty(true);
                 }}

@@ -10,7 +10,12 @@ import { useSession } from "next-auth/react";
 // eslint-disable-next-line @typescript-eslint/ban-types
 export const WYSIWYG: FC<{
   defaultValue?: DeltaStatic;
-  onChange: (fetchNewValue: () => DeltaStatic | undefined) => void;
+  onChange: (
+    fetchNewValue: () => {
+      full: DeltaStatic | undefined;
+      firstLine: string | undefined;
+    },
+  ) => void;
 }> = (props) => {
   const quillRef = useRef<ReactQuill>(null);
   const session = useSession();
@@ -34,12 +39,11 @@ export const WYSIWYG: FC<{
   );
 
   if (!session.data?.user.isPoster) {
-    console.log(props.defaultValue);
     return (
       <ReactQuill
         defaultValue={props.defaultValue}
         className="[&_.ql-editor_p]:post [&_.ql-editor]:border-t-[1px] [&_.ql-editor]:border-[#ccc] [&_.ql-toolbar]:hidden"
-        theme='snow'
+        theme="snow"
         modules={modules}
         readOnly
       />
@@ -53,7 +57,10 @@ export const WYSIWYG: FC<{
       ref={quillRef}
       modules={modules}
       onChange={() => {
-        props.onChange(() => quillRef.current?.getEditor().getContents());
+        props.onChange(() => ({
+          full: quillRef.current?.getEditor().getContents(),
+          firstLine: quillRef.current?.getEditor().getText().replace(/\n.*$/s, ""),
+        }));
       }}
     />
   );

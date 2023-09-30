@@ -20,11 +20,16 @@ export const getServerSideProps = async (
 ) => {
   return {
     props: {
-      entries: (await db.entry.findMany({
-        orderBy: {
-          date: "asc",
-        },
-      })).map(({date, ...rest}) => ({...rest, date: Zoneless.fromDate(date)})),
+      entries: (
+        await db.entry.findMany({
+          orderBy: {
+            date: "asc",
+          },
+        })
+      ).map(({ date, ...rest }) => ({
+        ...rest,
+        date: Zoneless.fromDate(date),
+      })),
     },
   };
 };
@@ -94,12 +99,13 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = ({
                         </span>
                       </div>
                       <div className="flex min-w-0 flex-1 justify-between space-x-4 pt-1.5">
-                        <div>
-                          <p className="text-sm text-gray-500">
-                            {entryType === "metric_recorded" &&
-                              "Metrics Recorded"}
-                            {entryType === "journal_entry" && "Journal Entry"}
-                          </p>
+                        <div className="text-sm text-gray-500">
+                          {entryType === "metric_recorded" && (
+                            <p>Metrics Recorded</p>
+                          )}
+                          {entryType === "journal_entry" && (
+                            <p className="overflow-hidden max-h-[3.75rem]">{entry.postText}</p>
+                          )}
                         </div>
                         <div className="whitespace-nowrap text-right text-sm text-gray-500">
                           <time

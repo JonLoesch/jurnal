@@ -14,6 +14,7 @@ export const postsRouter = createTRPCRouter({
     .input(
       z.object({
         postId: z.number(),
+        firstLine: z.string().optional(),
         postJson: z.any(),
         values: z.record(z.number().or(z.null())),
       }),
@@ -45,8 +46,11 @@ export const postsRouter = createTRPCRouter({
         }
         await db.entry.update({
           where: { id: input.postId },
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          data: { postQuill: input.postJson },
+          data: {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            postQuill: input.postJson,
+            postText: input.firstLine,
+          },
         });
       });
     }),
