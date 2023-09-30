@@ -11,7 +11,10 @@ datasource db {
     // Further reading:
     // https://next-auth.js.org/adapters/prisma#create-the-prisma-schema
     // https://www.prisma.io/docs/reference/api-reference/prisma-schema-reference#string
-    url      = env("DATABASE_URL")
+
+    // https://github.com/prisma/prisma/issues/19415 :
+    url       = env("POSTGRES_PRISMA_URL_NON_POOLING") // uses connection pooling
+    directUrl = env("POSTGRES_PRISMA_URL_NON_POOLING") // uses a direct connection
 }
 
 model Example {
