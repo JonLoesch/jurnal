@@ -8,8 +8,8 @@ const Page: FC = () => {
         <li className="line-through">Logins (NextAuth?)</li>
         <li className="line-through">Post Create/Edit UI</li>
         <li>Prisma production data</li>
-        <li>Guidlines for values in metrics</li>
-        <li>Entries with optional post content</li>
+        <li>Guidelines for values in metrics</li>
+        <li className="line-through">Entries with optional post content</li>
         <li>All posts -{"> \"Timeline\""} </li>
         <li>Notifications</li>
         <li>Multiple Journalers</li>

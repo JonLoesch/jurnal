@@ -24,10 +24,11 @@ model Example {
 }
 
 model Entry {
-    id       Int      @id @default(autoincrement())
-    postText String?
-    date     DateTime @db.Date
-    values   Value[]
+    id        Int      @id @default(autoincrement())
+    postText  String?
+    postQuill Json?
+    date      DateTime @db.Date
+    values    Value[]
 }
 
 model Value {

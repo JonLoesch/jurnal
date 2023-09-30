@@ -15,8 +15,8 @@ export const getServerSideProps = async (
     props: {
       entries: await db.entry.findMany({
         orderBy: {
-          date: 'asc'
-        }
+          date: "asc",
+        },
       }),
     },
   };
@@ -27,13 +27,14 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = ({
 }) => {
   const addPost = api.posts.create.useMutation();
   const router = useRouter();
+  const session = useSession();
 
   if (addPost.isSuccess) {
     void router.push({
-      pathname: 'posts/edit/[postid]',
+      pathname: "posts/edit/[postid]",
       query: {
         postid: addPost.data,
-      }
+      },
     });
   }
   return (
@@ -83,13 +84,18 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = ({
         ))}
       </ul>
 
-      <div className='flex justify-end mt-16'>
-        <button className="btn btn-primary" onClick={() => {
-          addPost.mutate();
-        }}>
-          New Post
-        </button>
-      </div>
+      {session.data?.user.isPoster && (
+        <div className="mt-16 flex justify-end">
+          <button
+            className="btn btn-primary"
+            onClick={() => {
+              addPost.mutate();
+            }}
+          >
+            New Post
+          </button>
+        </div>
+      )}
     </div>
   );
 };

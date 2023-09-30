@@ -8,14 +8,15 @@ import {
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { FC, PropsWithChildren, useState } from "react";
+import { FC, PropsWithChildren, useRef, useState } from "react";
 import { isDirty, z } from "zod";
-import { MetricAdjust } from "~/components/MetricAdjust";
+import { MetricAdjust, MetricBadge } from "~/components/MetricAdjust";
 import { FullPage, MainSection, StackedForm, Title } from "~/components/theme";
 import { db } from "~/server/db";
 import dynamic from "next/dynamic";
 import { api } from "~/utils/api";
 import { CheckIcon, CursorArrowRaysIcon } from "@heroicons/react/24/outline";
+import { type DeltaStatic } from "quill";
 
 const WYSIWYG = dynamic(
   () => import("~/components/WYSIWYG").then((x) => x.WYSIWYG),
@@ -65,6 +66,14 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
     setDirty(true);
   }
   const [postText, setPostText] = useState(props.post.postText);
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
+  const postJson: DeltaStatic | undefined = props.post.postQuill as any;
+  const [getPostJson, setPostJson] = useState<() => DeltaStatic | undefined>(
+    () => () => postJson,
+  );
+
+  const session = useSession();
+  const isPoster = session.data?.user.isPoster ?? false;
 
   const editPost = api.posts.edit.useMutation();
 
@@ -78,6 +87,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
               .mutateAsync({
                 postId: props.post.id,
                 postText,
+                postJson: getPostJson(),
                 values: Object.fromEntries(values.map((v) => [v.key, v.value])),
               })
               .then(() => setDirty(false));
@@ -97,21 +107,45 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
               }}
               placeholder=""
             />
-            {values.map((v) => (
-              <StackedForm.SectionItem key={v.key}>
-                <MetricAdjust
-                  metricKey={v.key}
-                  name={v.name}
-                  value={v.value}
-                  onChange={(newValue) => setValue(v.key, newValue)}
-                />
+            <StackedForm.SectionItem>
+              <WYSIWYG
+                defaultValue={postJson}
+                onChange={(fetch) => {
+                  console.log(fetch);
+                  setPostJson(() => fetch);
+                  setDirty(true);
+                }}
+              />
+            </StackedForm.SectionItem>
+            {isPoster &&
+              values.map((v) => (
+                <StackedForm.SectionItem key={v.key}>
+                  <MetricAdjust
+                    metricKey={v.key}
+                    name={v.name}
+                    value={v.value}
+                    onChange={(newValue) => setValue(v.key, newValue)}
+                  />
+                </StackedForm.SectionItem>
+              ))}
+            {!isPoster && (
+              <StackedForm.SectionItem>
+                {values.map((v) => (
+                  <MetricBadge
+                    key={v.key}
+                    metricKey={v.key}
+                    name={v.name}
+                    value={v.value}
+                    // onChange={(newValue) => setValue(v.key, newValue)}
+                  />
+                ))}
               </StackedForm.SectionItem>
-            ))}
+            )}
           </StackedForm.Section>
           <StackedForm.ButtonPanel>
             <StackedForm.SubmitButton disabled={!dirty} label="Save">
-              {editPost.isLoading && <CursorArrowRaysIcon className='w-8'/>}
-              {editPost.isSuccess && <CheckIcon className='w-8'/>}
+              {editPost.isLoading && <CursorArrowRaysIcon className="w-8" />}
+              {editPost.isSuccess && <CheckIcon className="w-8" />}
             </StackedForm.SubmitButton>
           </StackedForm.ButtonPanel>
         </StackedForm.Main>
@@ -142,3 +176,17 @@ export const LinkToEditPost: FC<PropsWithChildren<{ postid: number }>> = (
 };
 
 export default Page;
+
+const Lorem = () => (
+  <>
+    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum nec
+    metus nisl. Donec lectus neque, convallis quis facilisis vitae, bibendum vel
+    lorem. Nam in ultricies justo. Cras bibendum sapien non scelerisque
+    suscipit. Vivamus eu vulputate odio. Etiam vel metus tempor, sodales nunc
+    porttitor, faucibus urna. Interdum et malesuada fames ac ante ipsum primis
+    in faucibus. Pellentesque eleifend nisi id facilisis cursus. Nam mattis, mi
+    et malesuada cursus, sem tellus lobortis ante, vitae molestie magna turpis a
+    lacus. Aliquam mollis id risus quis molestie. Sed lectus purus, fringilla
+    non hendrerit eget, fringilla vitae lacus. Vivamus et lacus nulla.
+  </>
+);

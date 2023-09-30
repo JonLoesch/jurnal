@@ -52,7 +52,24 @@ export const MetricAdjust: FC<{
   );
 };
 
+export const MetricBadge: FC<{
+
+  name: string;
+  metricKey: string;
+  value: number | null;
+}> = props => {
+  return <div className = 'rounded-full h-10 flex justify-between'>
+    <span>
+    {props.name}:
+    </span>
+    <span style={{
+      backgroundColor: props.value !== null ? `hsl(${greenToRed(props.value/10)})` : 'transparent',
+    }} className='rounded-full px-3 h-6'>
+    {props.value} / 10
+    </span>
+  </div>
+}
+
 function greenToRed(v: number): string {
-  return `${(120 * v).toFixed(0)} ${(100 * (1 - v * (1 - v))).toFixed(0)}% 50%`;
-  // console.log(v, a);
+  return `${(120 * v).toFixed(0)} ${(100 * (1 - v * (1 - v))).toFixed(0)}% ${50 - 20*v}%`;
 }
