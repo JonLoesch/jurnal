@@ -33,6 +33,11 @@ export const getServerSideProps = async (
         include: {
           entry: true,
         },
+        orderBy: {
+          entry: {
+            date: 'asc'
+          }
+        }
       }),
       metrics: await getMetricMetadata(),
     },

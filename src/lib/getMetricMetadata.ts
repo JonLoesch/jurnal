@@ -5,11 +5,16 @@ export const getMetricMetadata = async () => {
     include: {
       values: {
         orderBy: {
-          value: "desc",
+          entry: {
+            date: 'desc',
+          }
         },
         take: 1,
       },
     },
+    orderBy: {
+      sortOrder: 'asc'
+    }
   });
   return result.map(({ values, ...rest }) => ({
     ...rest,

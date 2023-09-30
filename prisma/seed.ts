@@ -86,7 +86,7 @@ async function main() {
 }
 
 async function metrics() {
-  async function m(key: string, name: string) {
+  async function m(key: string, name: string, sortOrder: number) {
     return prisma.metric.upsert({
       where: { key },
       update: {
@@ -96,16 +96,17 @@ async function metrics() {
         type: "ZeroToTen",
         key,
         name,
+        sortOrder,
       },
     });
   }
   return {
-    mood: await m("mood", 'General Mood'),
-    sleep: await m("sleep", 'Slept well'),
-    eat: await m("eat", 'Ate Well'),
-    move: await m("move", 'Excersized'),
-    talk: await m("talk", 'Socially Active'),
-    made: await m("made", 'Was Productive'),
+    mood: await m("mood", 'General Mood', 1),
+    sleep: await m("sleep", 'Slept well', 2),
+    eat: await m("eat", 'Ate Well', 3),
+    move: await m("move", 'Excersized', 4),
+    talk: await m("talk", 'Socially Active', 5),
+    made: await m("made", 'Was Productive', 6),
   };
 }
 

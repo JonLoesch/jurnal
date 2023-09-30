@@ -39,6 +39,9 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
         },
       }),
       values: await db.metric.findMany({
+        orderBy: {
+          sortOrder: 'asc'
+        },
         include: {
           values: {
             where: {

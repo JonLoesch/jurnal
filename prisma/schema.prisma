@@ -45,11 +45,12 @@ model Value {
 }
 
 model Metric {
-    key    String  @id
-    name   String
-    values Value[]
-    type   String
-    goals  Goal[]
+    key       String  @id
+    name      String
+    values    Value[]
+    type      String
+    goals     Goal[]
+    sortOrder Int
 }
 
 model Goal {
