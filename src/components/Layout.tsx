@@ -28,11 +28,11 @@ interface TopLevelPage {
 }
 
 const top: TopLevelPage[] = [
-  { href: "/", title: "Home" },
-  { href: "/posts", title: "All Posts" },
+  // { href: "/", title: "Home" },
+  { href: "/posts", title: "Timeline" },
   { href: "/graphs", title: "Graphs" },
   { href: "/notifications", title: "Notifications" },
-  { href: "/todo", title: "Todo list" },
+  // { href: "/todo", title: "Todo list" },
 ];
 
 export const Layout: FC<PropsWithChildren> = (props) => {

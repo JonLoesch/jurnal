@@ -65,7 +65,6 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
     setValues((vs) => vs.map((v) => (v.key !== key ? v : { ...v, value })));
     setDirty(true);
   }
-  const [postText, setPostText] = useState(props.post.postText);
   // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
   const postJson: DeltaStatic | undefined = props.post.postQuill as any;
   const [getPostJson, setPostJson] = useState<() => DeltaStatic | undefined>(
@@ -86,7 +85,6 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
             void editPost
               .mutateAsync({
                 postId: props.post.id,
-                postText,
                 postJson: getPostJson(),
                 values: Object.fromEntries(values.map((v) => [v.key, v.value])),
               })
@@ -97,16 +95,6 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
             title="Journal"
             description="How did your day go?"
           >
-            <StackedForm.TextArea
-              label=""
-              metricKey="postText"
-              text={postText}
-              onChange={(t) => {
-                setPostText(t);
-                setDirty(true);
-              }}
-              placeholder=""
-            />
             <StackedForm.SectionItem>
               <WYSIWYG
                 defaultValue={postJson}
