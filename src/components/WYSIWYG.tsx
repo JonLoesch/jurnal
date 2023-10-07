@@ -38,7 +38,7 @@ export const WYSIWYG: FC<{
     [],
   );
 
-  if (!session.data?.user.isPoster) {
+  if (session.data?.user.role !== 'journaler') {
     return (
       <ReactQuill
         defaultValue={props.defaultValue}

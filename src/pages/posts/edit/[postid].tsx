@@ -80,7 +80,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
   >(() => () => ({ full: postJson, firstLine: undefined }));
 
   const session = useSession();
-  const isPoster = session.data?.user.isPoster ?? false;
+  const isPoster = session.data?.user.role === 'journaler';
 
   const editPost = api.posts.edit.useMutation();
 

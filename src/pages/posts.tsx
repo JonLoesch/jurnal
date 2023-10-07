@@ -124,7 +124,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = ({
           })}
         </ul>
 
-        {session.data?.user.isPoster && (
+        {session.data?.user.role === 'journaler' && (
           <div className="mt-16 flex justify-end">
             <button
               className="btn btn-primary"
