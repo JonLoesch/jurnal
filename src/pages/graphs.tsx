@@ -13,13 +13,18 @@ export const GraphLayout: FC<
         latestValue?: number;
       }
     >;
+    hideOnSmall?: boolean;
   }>
 > = (props) => {
   const { metrics } = props;
 
   return (
     <div>
-      <dl className="grid-cell-90 mt-5 grid gap-5">
+      <dl
+        className={`grid-cell-90 mt-5 gap-5 ${
+          props.hideOnSmall ? "xl:grid hidden" : "grid"
+        }`}
+      >
         {metrics.map((item) => (
           <div
             key={item.key}
@@ -32,7 +37,7 @@ export const GraphLayout: FC<
                 </span>
               </div>
               <p className="ml-16 truncate text-sm font-medium text-gray-500">
-                {item.key}
+                {item.name}
               </p>
             </dt>
             <dd className="ml-16 flex items-baseline pb-6 sm:pb-7">

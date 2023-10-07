@@ -51,7 +51,7 @@ export default function Page(
   props: InferGetServerSidePropsType<typeof getServerSideProps>,
 ) {
   return (
-    <GraphLayout metrics={props.metrics}>
+    <GraphLayout metrics={props.metrics} hideOnSmall>
       <LineChart
         width={400}
         height={400}
