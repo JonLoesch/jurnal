@@ -16,7 +16,9 @@ type AuthorizedRoles =
 function checkThemeAccess(
   session: Session | null,
   theme?: Prisma.ThemeGetPayload<{
-    include: {
+    select: {
+      isPublic: true,
+      id: true,
       reader: true;
       owner: true;
     };
@@ -39,15 +41,15 @@ function checkThemeAccess(
 
 const redirectToLogin: GetServerSidePropsResult<unknown> = {
   redirect: {
-    destination: '/api/auth/signin?callbackUrl',
+    destination: "/api/auth/signin?callbackUrl",
     permanent: false,
-  }
-}
+  },
+};
 
 export const authorize = {
   async theme<Where extends Prisma.ThemeWhereUniqueInput>(
     db: PrismaClient,
-    session: Promise<Session | null>,
+    session: Promise<Session | null> | Session,
     where: Where,
   ) {
     const theme = await db.theme.findUnique({
@@ -61,7 +63,7 @@ export const authorize = {
   },
   async post<Where extends Prisma.EntryWhereUniqueInput>(
     db: PrismaClient,
-    session: Promise<Session | null>,
+    session: Promise<Session | null> | Session,
     where: Where,
   ): Promise<AuthorizedRoles> {
     return checkThemeAccess(
@@ -72,6 +74,30 @@ export const authorize = {
           include: {
             theme: {
               include: {
+                reader: true,
+                owner: true,
+              },
+            },
+          },
+        })
+      )?.theme,
+    );
+  },
+  async metric<Where extends Prisma.MetricWhereUniqueInput>(
+    db: PrismaClient,
+    session: Promise<Session | null> | Session,
+    where: Where,
+  ): Promise<AuthorizedRoles> {
+    return checkThemeAccess(
+      await session,
+      (
+        await db.metric.findUnique({
+          where,
+          include: {
+            theme: {
+              select: {
+                id: true,
+                isPublic: true,
                 reader: true,
                 owner: true,
               },

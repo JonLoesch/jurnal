@@ -51,17 +51,9 @@ model Metric {
     name      String
     values    Value[]
     type      String
-    goals     Goal[]
     sortOrder Int
-}
-
-model Goal {
-    theme     Theme  @relation(fields: [themeId], references: [id])
+    theme     Theme   @relation(fields: [themeId], references: [id])
     themeId   Int
-    metric    Metric @relation(fields: [metricKey], references: [key])
-    metricKey String
-
-    @@id([themeId, metricKey])
 }
 
 model Theme {
@@ -69,11 +61,11 @@ model Theme {
     name        String
     description String
     owner       User     @relation(fields: [ownerId], references: [id])
-    goals       Goal[]
     ownerId     String
     isPublic    Boolean
     reader      Reader[]
     entry       Entry[]
+    metric      Metric[]
 }
 
 model Reader {

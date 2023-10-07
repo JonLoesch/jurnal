@@ -49,6 +49,9 @@ export const getServerSideProps = async (
           orderBy: {
             date: "asc",
           },
+          where: {
+            themeId: auth.themeid,
+          }
         })
       ).map(({ date, ...rest }) => ({
         ...rest,
@@ -68,10 +71,9 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = ({
 
   if (addPost.isSuccess) {
     void router.push({
-      pathname: "/journal/[themeid]/posts/edit/[postid]",
+      pathname: "/posts/edit/[postid]",
       query: {
         postid: addPost.data,
-        themeid: auth.themeid,
       },
     });
   }
@@ -159,7 +161,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = ({
               <button
                 className="btn btn-primary"
                 onClick={() => {
-                  addPost.mutate();
+                  addPost.mutate({themeId: auth.themeid});
                 }}
               >
                 New Post

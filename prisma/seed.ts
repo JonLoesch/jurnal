@@ -57,7 +57,6 @@ async function main() {
   const theme = await prisma.theme.upsert({
     where: { id: 1 },
     create: {
-      id: 1,
       isPublic: true,
       description:
         "This is the default DEV journal.  Created by the Prisma seed script",
@@ -121,47 +120,31 @@ async function main() {
     }
   }
 
-  await addGoal(m.mood);
-  await addGoal(m.sleep);
-  await addGoal(m.eat);
-  await addGoal(m.move);
-  await addGoal(m.talk);
-  await addGoal(m.made);
-
-  async function addGoal(metric: Prisma.MetricGetPayload<null>) {
-    await prisma.goal.upsert({
-      where: {
-        themeId_metricKey: { metricKey: metric.key, themeId: theme.id },
-      },
-      create: { metricKey: metric.key, themeId: theme.id },
-      update: {},
-    });
+  async function metrics() {
+    async function m(key: string, name: string, sortOrder: number) {
+      return prisma.metric.upsert({
+        where: { key },
+        update: {
+          type: "ZeroToTen",
+        },
+        create: {
+          themeId: theme.id,
+          type: "ZeroToTen",
+          key,
+          name,
+          sortOrder,
+        },
+      });
+    }
+    return {
+      mood: await m("mood", "General Mood", 1),
+      sleep: await m("sleep", "Slept well", 2),
+      eat: await m("eat", "Ate Well", 3),
+      move: await m("move", "Excersized", 4),
+      talk: await m("talk", "Socially Active", 5),
+      made: await m("made", "Was Productive", 6),
+    };
   }
-}
-
-async function metrics() {
-  async function m(key: string, name: string, sortOrder: number) {
-    return prisma.metric.upsert({
-      where: { key },
-      update: {
-        type: "ZeroToTen",
-      },
-      create: {
-        type: "ZeroToTen",
-        key,
-        name,
-        sortOrder,
-      },
-    });
-  }
-  return {
-    mood: await m("mood", "General Mood", 1),
-    sleep: await m("sleep", "Slept well", 2),
-    eat: await m("eat", "Ate Well", 3),
-    move: await m("move", "Excersized", 4),
-    talk: await m("talk", "Socially Active", 5),
-    made: await m("made", "Was Productive", 6),
-  };
 }
 
 main()

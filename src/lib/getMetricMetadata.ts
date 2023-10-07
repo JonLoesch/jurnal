@@ -1,7 +1,10 @@
 import { db } from "~/server/db";
 
-export const getMetricMetadata = async () => {
+export const getMetricMetadata = async (themeId: number) => {
   const result = await db.metric.findMany({
+    where: {
+      themeId,
+    },
     include: {
       values: {
         orderBy: {

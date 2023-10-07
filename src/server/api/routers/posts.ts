@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { db } from "~/server/db";
+import { authorize } from "~/lib/authorize";
+import { TRPCError } from "@trpc/server";
 
 const literalSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
 type Literal = z.infer<typeof literalSchema>;
@@ -20,6 +22,11 @@ export const postsRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      if (
+        !(await authorize.post(ctx.db, ctx.session, { id: input.postId })).write
+      ) {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
       await ctx.db.$transaction(async (db) => {
         for (const [key, value] of Object.entries(input.values)) {
           if (value === null) {
@@ -54,13 +61,21 @@ export const postsRouter = createTRPCRouter({
         });
       });
     }),
-  create: protectedProcedure.mutation(async ({ ctx }) => {
-    return (
-      await db.entry.create({
-        data: {
-          date: new Date(),
-        },
-      })
-    ).id;
-  }),
+  create: protectedProcedure
+    .input(z.object({ themeId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      if (
+        !(await authorize.theme(ctx.db, ctx.session, { id: input.themeId })).write
+      ) {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
+      return (
+        await db.entry.create({
+          data: {
+            themeId: input.themeId,
+            date: new Date(),
+          },
+        })
+      ).id;
+    }),
 });

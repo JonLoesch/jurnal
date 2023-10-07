@@ -24,12 +24,10 @@ import { getServerAuthSession } from "~/server/auth";
 export const getServerSideProps = async (
   context: GetServerSidePropsContext,
 ) => {
-  const auth = await authorize.theme(db, getServerAuthSession(context), {
-    id: z
+  const auth = await authorize.metric(db, getServerAuthSession(context), {
+    key: z
       .string()
-      .regex(/^\d+$/)
-      .transform(Number)
-      .parse(context.query.themeid),
+      .parse(context.query.metric),
   });
   if (!auth.read) {
     return authorize.redirectToLogin;
@@ -55,7 +53,7 @@ export const getServerSideProps = async (
         ...rest,
         entry: { ...entry, date: Zoneless.fromDate(date) },
       })),
-      metrics: await getMetricMetadata(),
+      metrics: await getMetricMetadata(auth.themeid),
     },
   };
 };

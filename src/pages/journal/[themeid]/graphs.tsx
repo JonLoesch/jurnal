@@ -117,7 +117,7 @@ export const getServerSideProps = async (
   return {
     props: {
       auth,
-      metrics: await getMetricMetadata(),
+      metrics: await getMetricMetadata(auth.themeid),
     },
   };
 };
