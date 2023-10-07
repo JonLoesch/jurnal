@@ -32,6 +32,8 @@ model Entry {
     postQuill Json?
     date      DateTime @db.Date
     values    Value[]
+    theme     Theme    @relation(fields: [themeId], references: [id])
+    themeId   Int
 }
 
 model Value {
@@ -54,16 +56,31 @@ model Metric {
 }
 
 model Goal {
-    id        Int     @id @default(autoincrement())
-    theme     Theme?  @relation(fields: [themeId], references: [id])
-    themeId   Int?
-    metric    Metric? @relation(fields: [metricKey], references: [key])
-    metricKey String?
+    theme     Theme  @relation(fields: [themeId], references: [id])
+    themeId   Int
+    metric    Metric @relation(fields: [metricKey], references: [key])
+    metricKey String
+
+    @@id([themeId, metricKey])
 }
 
 model Theme {
-    id    Int    @id @default(autoincrement())
-    goals Goal[]
+    id          Int      @id @default(autoincrement())
+    name        String
+    description String
+    owner       User     @relation(fields: [ownerId], references: [id])
+    goals       Goal[]
+    ownerId     String
+    isPublic    Boolean
+    reader      Reader[]
+    entry       Entry[]
+}
+
+model Reader {
+    id      Int    @id @default(autoincrement())
+    theme   Theme  @relation(fields: [themeId], references: [id])
+    themeId Int
+    email   String
 }
 
 // Necessary for Next auth
@@ -102,6 +119,7 @@ model User {
     role          String?
     accounts      Account[]
     sessions      Session[]
+    Theme         Theme[]
 }
 
 model VerificationToken {

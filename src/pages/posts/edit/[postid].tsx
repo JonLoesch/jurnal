@@ -18,6 +18,9 @@ import { api } from "~/utils/api";
 import { CheckIcon, CursorArrowRaysIcon } from "@heroicons/react/24/outline";
 import { type DeltaStatic } from "quill";
 import { Zoneless } from "~/lib/ZonelessDate";
+import { authorize } from "~/lib/authorize";
+import { getServerAuthSession } from "~/server/auth";
+import { Layout } from "~/components/Layout";
 
 const WYSIWYG = dynamic(
   () => import("~/components/WYSIWYG").then((x) => x.WYSIWYG),
@@ -26,19 +29,29 @@ const WYSIWYG = dynamic(
   },
 );
 
-export async function getServerSideProps(context: GetServerSidePropsContext) {
+export const getServerSideProps = async (
+  context: GetServerSidePropsContext,
+) => {
   const postId = z
     .string()
     .regex(/^\d+$/)
     .transform(Number)
     .parse(context.query.postid);
+  const auth = await authorize.post(db, getServerAuthSession(context), {
+    id: postId,
+  });
   const { date, ...post } = await db.entry.findUniqueOrThrow({
     where: {
       id: postId,
     },
   });
+
+  if (!auth.read) {
+    return authorize.redirectToLogin;
+  }
   return {
     props: {
+      auth,
       post: { ...post, date: Zoneless.fromDate(date) },
       values: await db.metric.findMany({
         orderBy: {
@@ -54,7 +67,7 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
       }),
     },
   };
-}
+};
 
 const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
   props,
@@ -79,75 +92,79 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
     }
   >(() => () => ({ full: postJson, firstLine: undefined }));
 
-  const session = useSession();
-  const isPoster = session.data?.user.role === 'journaler';
-
   const editPost = api.posts.edit.useMutation();
 
   return (
-    <FullPage>
-      <Title>{format(Zoneless.toDate(props.post.date), "EEEE MMMM d")}</Title>
-      <MainSection>
-        <StackedForm.Main
-          onSubmit={() => {
-            const postJson = getPostJson();
-            void editPost
-              .mutateAsync({
-                postId: props.post.id,
-                postJson: postJson.full,
-                firstLine: postJson.firstLine,
-                values: Object.fromEntries(values.map((v) => [v.key, v.value])),
-              })
-              .then(() => setDirty(false));
-          }}
-        >
-          <StackedForm.Section
-            title="Journal"
-            description="How did your day go?"
+    <Layout themeid={props.auth.themeid}>
+      <FullPage>
+        <Title>{format(Zoneless.toDate(props.post.date), "EEEE MMMM d")}</Title>
+        <MainSection>
+          <StackedForm.Main
+            onSubmit={() => {
+              const postJson = getPostJson();
+              void editPost
+                .mutateAsync({
+                  postId: props.post.id,
+                  postJson: postJson.full,
+                  firstLine: postJson.firstLine,
+                  values: Object.fromEntries(
+                    values.map((v) => [v.key, v.value]),
+                  ),
+                })
+                .then(() => setDirty(false));
+            }}
           >
-            <StackedForm.SectionItem>
-              <WYSIWYG
-                defaultValue={postJson}
-                onChange={(fetch) => {
-                  setPostJson(() => fetch);
-                  setDirty(true);
-                }}
-              />
-            </StackedForm.SectionItem>
-            {isPoster &&
-              values.map((v) => (
-                <StackedForm.SectionItem key={v.key}>
-                  <MetricAdjust
-                    metricKey={v.key}
-                    name={v.name}
-                    value={v.value}
-                    onChange={(newValue) => setValue(v.key, newValue)}
-                  />
-                </StackedForm.SectionItem>
-              ))}
-            {!isPoster && (
+            <StackedForm.Section
+              title="Journal"
+              description="How did your day go?"
+            >
               <StackedForm.SectionItem>
-                {values.map((v) => (
-                  <MetricBadge
-                    key={v.key}
-                    metricKey={v.key}
-                    name={v.name}
-                    value={v.value}
-                    // onChange={(newValue) => setValue(v.key, newValue)}
-                  />
-                ))}
+                <WYSIWYG
+                  editable={props.auth.write}
+                  defaultValue={postJson}
+                  onChange={(fetch) => {
+                    setPostJson(() => fetch);
+                    setDirty(true);
+                  }}
+                />
               </StackedForm.SectionItem>
-            )}
-          </StackedForm.Section>
-          <StackedForm.ButtonPanel>
-            <StackedForm.SubmitButton disabled={!dirty} label="Save">
-              {editPost.isLoading && <CursorArrowRaysIcon className="w-8" />}
-              {editPost.isSuccess && <CheckIcon className="w-8" />}
-            </StackedForm.SubmitButton>
-          </StackedForm.ButtonPanel>
-        </StackedForm.Main>
-      </MainSection>
-    </FullPage>
+              {props.auth.write &&
+                values.map((v) => (
+                  <StackedForm.SectionItem key={v.key}>
+                    <MetricAdjust
+                      metricKey={v.key}
+                      name={v.name}
+                      value={v.value}
+                      onChange={(newValue) => setValue(v.key, newValue)}
+                    />
+                  </StackedForm.SectionItem>
+                ))}
+              {!props.auth.write && (
+                <StackedForm.SectionItem>
+                  {values.map((v) =>
+                    v.value === null ? null : (
+                      <MetricBadge
+                        key={v.key}
+                        metricKey={v.key}
+                        name={v.name}
+                        value={v.value}
+                        // onChange={(newValue) => setValue(v.key, newValue)}
+                      />
+                    ),
+                  )}
+                </StackedForm.SectionItem>
+              )}
+            </StackedForm.Section>
+            <StackedForm.ButtonPanel>
+              <StackedForm.SubmitButton disabled={!dirty} label="Save">
+                {editPost.isLoading && <CursorArrowRaysIcon className="w-8" />}
+                {editPost.isSuccess && <CheckIcon className="w-8" />}
+              </StackedForm.SubmitButton>
+            </StackedForm.ButtonPanel>
+          </StackedForm.Main>
+        </MainSection>
+      </FullPage>
+    </Layout>
   );
 };
 

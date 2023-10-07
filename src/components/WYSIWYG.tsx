@@ -16,6 +16,7 @@ export const WYSIWYG: FC<{
       firstLine: string | undefined;
     },
   ) => void;
+  editable: boolean,
 }> = (props) => {
   const quillRef = useRef<ReactQuill>(null);
   const session = useSession();
@@ -38,7 +39,7 @@ export const WYSIWYG: FC<{
     [],
   );
 
-  if (session.data?.user.role !== 'journaler') {
+  if (!props.editable) {
     return (
       <ReactQuill
         defaultValue={props.defaultValue}

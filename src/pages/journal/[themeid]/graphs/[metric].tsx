@@ -14,15 +14,29 @@ const LineChart = dynamic(() => import("recharts").then((x) => x.LineChart), {
 
 import { z } from "zod";
 import { getMetricMetadata } from "~/lib/getMetricMetadata";
-import { GraphLayout } from "~/pages/graphs";
+import { GraphLayout } from "~/pages/journal/[themeid]/graphs";
 import { db } from "~/server/db";
 import { Zoneless } from "~/lib/ZonelessDate";
+import { Layout } from "~/components/Layout";
+import { authorize } from "~/lib/authorize";
+import { getServerAuthSession } from "~/server/auth";
 
 export const getServerSideProps = async (
   context: GetServerSidePropsContext,
 ) => {
+  const auth = await authorize.theme(db, getServerAuthSession(context), {
+    id: z
+      .string()
+      .regex(/^\d+$/)
+      .transform(Number)
+      .parse(context.query.themeid),
+  });
+  if (!auth.read) {
+    return authorize.redirectToLogin;
+  }
   return {
     props: {
+      auth,
       values: (
         await db.value.findMany({
           where: {
@@ -51,22 +65,24 @@ export default function Page(
   props: InferGetServerSidePropsType<typeof getServerSideProps>,
 ) {
   return (
-    <GraphLayout metrics={props.metrics} hideOnSmall>
-      <LineChart
-        width={400}
-        height={400}
-        data={props.values.map((v) => ({
-          date: Zoneless.toDate(v.entry.date),
-          zeroToTen: v.value,
-        }))}
-      >
-        <Line type="monotone" dataKey="zeroToTen" stroke="#8884d8" />
+    <Layout themeid={props.auth.themeid}>
+      <GraphLayout metrics={props.metrics} hideOnSmall>
+        <LineChart
+          width={400}
+          height={400}
+          data={props.values.map((v) => ({
+            date: Zoneless.toDate(v.entry.date),
+            zeroToTen: v.value,
+          }))}
+        >
+          <Line type="monotone" dataKey="zeroToTen" stroke="#8884d8" />
 
-        <CartesianGrid stroke="#ccc" strokeDasharray="5 5" />
-        <XAxis dataKey="date" />
-        <YAxis domain={[0, 10]} />
-        <Tooltip />
-      </LineChart>
-    </GraphLayout>
+          <CartesianGrid stroke="#ccc" strokeDasharray="5 5" />
+          <XAxis dataKey="date" />
+          <YAxis domain={[0, 10]} />
+          <Tooltip />
+        </LineChart>
+      </GraphLayout>
+    </Layout>
   );
 }

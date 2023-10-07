@@ -3,7 +3,11 @@ import { Prisma } from "@prisma/client";
 import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import Link from "next/link";
 import { FC, PropsWithChildren } from "react";
+import { z } from "zod";
+import { Layout } from "~/components/Layout";
+import { authorize } from "~/lib/authorize";
 import { getMetricMetadata } from "~/lib/getMetricMetadata";
+import { getServerAuthSession } from "~/server/auth";
 import { db } from "~/server/db";
 
 export const GraphLayout: FC<
@@ -22,7 +26,7 @@ export const GraphLayout: FC<
     <div>
       <dl
         className={`grid-cell-90 mt-5 gap-5 ${
-          props.hideOnSmall ? "xl:grid hidden" : "grid"
+          props.hideOnSmall ? "hidden xl:grid" : "grid"
         }`}
       >
         {metrics.map((item) => (
@@ -100,8 +104,19 @@ export const GraphLayout: FC<
 export const getServerSideProps = async (
   context: GetServerSidePropsContext,
 ) => {
+  const auth = await authorize.theme(db, getServerAuthSession(context), {
+    id: z
+      .string()
+      .regex(/^\d+$/)
+      .transform(Number)
+      .parse(context.query.themeid),
+  });
+  if (!auth.read) {
+    return authorize.redirectToLogin;
+  }
   return {
     props: {
+      auth,
       metrics: await getMetricMetadata(),
     },
   };
@@ -110,5 +125,9 @@ export const getServerSideProps = async (
 export default function Page(
   props: InferGetServerSidePropsType<typeof getServerSideProps>,
 ) {
-  return <GraphLayout metrics={props.metrics} />;
+  return (
+    <Layout themeid={props.auth.themeid}>
+      <GraphLayout metrics={props.metrics} />
+    </Layout>
+  );
 }

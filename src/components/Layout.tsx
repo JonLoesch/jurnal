@@ -23,19 +23,19 @@ function classNames(...classes: string[]) {
 }
 
 interface TopLevelPage {
-  href: string;
+  pathname: string;
   title: string;
 }
 
 const top: TopLevelPage[] = [
   // { href: "/", title: "Home" },
-  { href: "/posts", title: "Timeline" },
-  { href: "/graphs", title: "Graphs" },
-  { href: "/notifications", title: "Notifications" },
+  { pathname: "/journal/[themeid]/posts", title: "Timeline" },
+  { pathname: "/journal/[themeid]/graphs", title: "Graphs" },
+  // { pathname: "/journal/[themeid]/notifications", title: "Notifications" },
   // { href: "/todo", title: "Todo list" },
 ];
 
-export const Layout: FC<PropsWithChildren> = (props) => {
+export const Layout: FC<PropsWithChildren<{ themeid: number }>> = (props) => {
   const pathname = usePathname();
   const session = useSession();
 
@@ -58,10 +58,13 @@ export const Layout: FC<PropsWithChildren> = (props) => {
                   <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
                     {top.map((t, index) => (
                       <Link
-                        href={t.href}
-                        key={t.href}
+                        href={{
+                          pathname: t.pathname,
+                          query: { themeid: props.themeid },
+                        }}
+                        key={t.pathname}
                         className={`inline-flex items-center border-b-2  px-1 pt-1 text-sm font-medium  ${
-                          t.href === pathname
+                          t.pathname === pathname
                             ? "border-indigo-500 text-gray-500 hover:border-gray-300 hover:text-gray-700"
                             : "border-transparent text-gray-900"
                         }`}
@@ -183,8 +186,11 @@ export const Layout: FC<PropsWithChildren> = (props) => {
 
                 {top.map((t, index) => (
                   <Link
-                    href={t.href}
-                    key={t.href}
+                    href={{
+                      pathname: t.pathname,
+                      query: { themeid: props.themeid },
+                    }}
+                    key={t.pathname}
                     className="block border-l-4 border-transparent text-base font-medium text-gray-500 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700"
                   >
                     <Disclosure.Button as="div" className="py-2 pl-3 pr-4">

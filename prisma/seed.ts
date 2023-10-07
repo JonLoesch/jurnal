@@ -1,5 +1,5 @@
 import { Prisma, PrismaClient } from "@prisma/client";
-import { addDays, compareAsc, startOfToday } from "date-fns";
+import { addDays, compareAsc, startOfToday, subDays } from "date-fns";
 
 const prisma = new PrismaClient();
 
@@ -13,7 +13,7 @@ const data: Array<{
   made: number;
 }> = [
   {
-    date: new Date("2023-09-23"),
+    date: subDays(startOfToday(), 5),
     mood: 9,
     sleep: 7,
     eat: 7,
@@ -22,7 +22,7 @@ const data: Array<{
     made: 7,
   },
   {
-    date: new Date("2023-09-24"),
+    date: subDays(startOfToday(), 4),
     mood: 8,
     sleep: 5,
     eat: 5,
@@ -33,8 +33,44 @@ const data: Array<{
 ];
 
 async function main() {
+  const email = "jonloesch@gmail.com";
+  const placeholderEmail = "placeholder@example.com";
+  const me =
+    (await prisma.user.findUnique({
+      where: { email },
+    })) ??
+    (await prisma.user.upsert({
+      where: {
+        email: placeholderEmail,
+      },
+      create: {
+        email: placeholderEmail,
+      },
+      update: {},
+    }));
+  await prisma.user.update({
+    where: { id: me.id },
+    data: {
+      role: "journaler",
+    },
+  });
+  const theme = await prisma.theme.upsert({
+    where: { id: 1 },
+    create: {
+      id: 1,
+      isPublic: true,
+      description:
+        "This is the default DEV journal.  Created by the Prisma seed script",
+      name: "Dev Jurnal",
+      ownerId: me.id,
+    },
+    update: {
+      ownerId: me.id,
+    },
+  });
+
   for (
-    let date = new Date("2023-09-15");
+    let date = subDays(startOfToday(), 10);
     compareAsc(date, startOfToday()) < 0;
     date = addDays(date, 1)
   ) {
@@ -45,6 +81,7 @@ async function main() {
       await prisma.entry.create({
         data: {
           date,
+          themeId: theme.id,
         },
       });
     }
@@ -83,6 +120,23 @@ async function main() {
       });
     }
   }
+
+  await addGoal(m.mood);
+  await addGoal(m.sleep);
+  await addGoal(m.eat);
+  await addGoal(m.move);
+  await addGoal(m.talk);
+  await addGoal(m.made);
+
+  async function addGoal(metric: Prisma.MetricGetPayload<null>) {
+    await prisma.goal.upsert({
+      where: {
+        themeId_metricKey: { metricKey: metric.key, themeId: theme.id },
+      },
+      create: { metricKey: metric.key, themeId: theme.id },
+      update: {},
+    });
+  }
 }
 
 async function metrics() {
@@ -101,12 +155,12 @@ async function metrics() {
     });
   }
   return {
-    mood: await m("mood", 'General Mood', 1),
-    sleep: await m("sleep", 'Slept well', 2),
-    eat: await m("eat", 'Ate Well', 3),
-    move: await m("move", 'Excersized', 4),
-    talk: await m("talk", 'Socially Active', 5),
-    made: await m("made", 'Was Productive', 6),
+    mood: await m("mood", "General Mood", 1),
+    sleep: await m("sleep", "Slept well", 2),
+    eat: await m("eat", "Ate Well", 3),
+    move: await m("move", "Excersized", 4),
+    talk: await m("talk", "Socially Active", 5),
+    made: await m("made", "Was Productive", 6),
   };
 }
 
