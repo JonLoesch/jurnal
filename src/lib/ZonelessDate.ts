@@ -1,4 +1,4 @@
-import { format } from "date-fns"
+import { format, parse } from "date-fns"
 import { formatInTimeZone } from "date-fns-tz";
 
 export type ZonelessDate = {
@@ -11,6 +11,6 @@ export const Zoneless = {
         };
     },
     toDate(z: ZonelessDate): Date {
-        return new Date(z.zoneless);
+        return parse(z.zoneless, 'y-M-d', new Date());
     },
 }
