@@ -103,9 +103,6 @@ const LargeLayout: FC<LayoutProps> = (props) => {
                 <div>
                   <Menu.Button
                     className="relative flex rounded-full bg-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                    onClick={(e) => {
-                      console.log(e);
-                    }}
                   >
                     <span className="absolute -inset-1.5" />
                     <span className="sr-only">Open user menu</span>

@@ -1,6 +1,14 @@
 import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import { FC } from "react";
-import { StackedForm } from "~/components/theme";
+import { UnscopedLayout } from "~/components/Layout";
+import {
+  Cards,
+  FullPage,
+  MainSection,
+  StackedForm,
+  Title,
+} from "~/components/theme";
+import { SafeLink } from "~/lib/urls";
 import { getServerAuthSession } from "~/server/auth";
 import { db } from "~/server/db";
 
@@ -13,22 +21,47 @@ export const getServerSideProps = async (
       myJournals: await db.theme.findMany({
         where: { owner: session?.user },
       }),
-      followedJournals: 
-        await db.theme.findMany({
-            where: {
-                themeSubscription: {
-                    some: {
-                        user: session?.user,
-                    }
-                }
-            }
-        })
+      followedJournals: await db.theme.findMany({
+        where: {
+          themeSubscription: {
+            some: {
+              user: session?.user,
+            },
+          },
+        },
+      }),
     },
   };
 };
 
 const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
   props,
-) => {};
+) => {
+  return (
+    <UnscopedLayout>
+      <FullPage>
+        <Title>My Journals</Title>
+        <MainSection>
+          <div className="grid-cell-90">
+            {props.myJournals.map((j) => (
+              <Cards.PaddedCard
+                key={j.id}
+                actions={[
+                  {
+                    page: "viewJournal",
+                    themeid: j.id,
+                    title: "View Journal",
+                  },
+                ]}
+              >
+                {j.description}
+              </Cards.PaddedCard>
+            ))}
+          </div>
+        </MainSection>
+      </FullPage>
+    </UnscopedLayout>
+  );
+};
 
 export default Page;

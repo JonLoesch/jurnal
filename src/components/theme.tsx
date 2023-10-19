@@ -1,4 +1,6 @@
-import { FC, PropsWithChildren } from "react";
+import { FC, Fragment, PropsWithChildren } from "react";
+import { ifElse } from "~/lib/ifElse";
+import { Locator, SafeLink } from "~/lib/urls";
 
 export const Title: FC<PropsWithChildren> = (props) => {
   return (
@@ -31,14 +33,11 @@ export const StackedForm = {
     return (
       <button
         type="submit"
-        className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:bg-gray-300 flex items-center"
+        className="flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:bg-gray-300"
         disabled={props.disabled}
       >
-        <span>{props.label}
-          </span>
-        <span>
-        {props.children}
-          </span>
+        <span>{props.label}</span>
+        <span>{props.children}</span>
       </button>
     );
   },
@@ -139,18 +138,38 @@ export const StackedForm = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } satisfies Record<string, FC<any>>;
 
-/*
-  This example requires some changes to your config:
-  
-  ```
-  // tailwind.config.js
-  module.exports = {
-    // ...
-    plugins: [
-      // ...
-      require('@tailwindcss/forms'),
-    ],
-  }
-  ```
-*/
-import { PhotoIcon, UserCircleIcon } from "@heroicons/react/24/solid";
+type Action = Locator | { page: "action"; handler: () => void };
+
+export const Cards = {
+  List(props: PropsWithChildren) {
+    return <div className="grid-cell-90">{props.children}</div>;
+  },
+  PaddedCard(
+    props: PropsWithChildren<{ actions: Array<Action & { title: string }> }>,
+  ) {
+    return (
+      <div className="flex flex-col overflow-hidden rounded-lg bg-white shadow [&>*]:px-4 [&>*]:sm:px-6">
+        <div className="py-5 sm:py-6">{props.children}</div>
+        {/* <div className="ml-16 flex items-baseline pb-6 sm:pb-7"> */}
+        <div className="flex h-12 items-center justify-between bg-gray-50 text-sm font-medium text-indigo-600 hover:text-indigo-500">
+          {props.actions.map((action, index) => (
+            <Fragment key={action.page}>
+              {index !== 0 && (
+                <div className="h-full py-2">
+                  <div className="h-full border-l border-gray-300"></div>
+                </div>
+              )}
+              {action.page !== "action" && (
+                <SafeLink {...action}>{action.title}</SafeLink>
+              )}
+              {action.page === "action" && (
+                <button onClick={action.handler}>{action.title}</button>
+              )}
+            </Fragment>
+          ))}
+        </div>
+        {/* </div> */}
+      </div>
+    );
+  },
+} satisfies Record<string, FC<never>>;

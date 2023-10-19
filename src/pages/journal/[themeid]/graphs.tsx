@@ -25,7 +25,7 @@ export const GraphLayout: FC<
   return (
     <div>
       <dl
-        className={`grid-cell-90 mt-5 gap-5 ${
+        className={`grid-cell-90 m-5 max-sm:mx-0 gap-5 ${
           props.hideOnSmall ? "hidden xl:grid" : "grid"
         }`}
       >
