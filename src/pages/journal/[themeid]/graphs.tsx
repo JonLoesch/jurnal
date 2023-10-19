@@ -1,12 +1,12 @@
 import { ArrowDownIcon, ArrowUpIcon } from "@heroicons/react/24/outline";
 import { Prisma } from "@prisma/client";
 import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
-import Link from "next/link";
 import { FC, PropsWithChildren } from "react";
 import { z } from "zod";
 import { Layout } from "~/components/Layout";
 import { authorize } from "~/lib/authorize";
 import { getMetricMetadata } from "~/lib/getMetricMetadata";
+import { SafeLink } from "~/lib/urls";
 import { getServerAuthSession } from "~/server/auth";
 import { db } from "~/server/db";
 
@@ -79,17 +79,12 @@ export const GraphLayout: FC<
               &nbsp;
               <div className="absolute inset-x-0 bottom-0 bg-gray-50 px-4 py-4 sm:px-6">
                 <div className="text-sm">
-                  <Link
-                    href={{
-                      pathname: "/graphs/[metric]",
-                      query: {
-                        metric: item.key,
-                      },
-                    }}
-                    className="font-medium text-indigo-600 hover:text-indigo-500"
-                  >
-                    View all<span className="sr-only"> {item.name} stats</span>
-                  </Link>
+                  <div className="font-medium text-indigo-600 hover:text-indigo-500">
+                    <SafeLink page="viewSpecificMetric" metrickey={item.key}>
+                      View all
+                      <span className="sr-only"> {item.name} stats</span>
+                    </SafeLink>
+                  </div>
                 </div>
               </div>
             </dd>

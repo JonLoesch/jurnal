@@ -11,6 +11,22 @@ export type Locator =
   | {
       page: "editPost";
       postid: number;
+    }
+  | {
+      page: "viewTimeline";
+      themeid: number;
+    }
+  | {
+      page: "viewMetrics";
+      themeid: number;
+    }
+  | {
+      page: "viewJournal";
+      themeid: number;
+    }
+    | {
+      page: 'viewSpecificMetric';
+      metrickey: string;
     };
 
 export function RelativeToRoot(locator: Locator): string {
@@ -18,6 +34,14 @@ export function RelativeToRoot(locator: Locator): string {
     case "viewPost":
     case "editPost":
       return `/posts/edit/${locator.postid}`;
+    case "viewJournal":
+    case "viewTimeline":
+      return `/journal/${locator.themeid}/posts`;
+    case "viewMetrics":
+      return `/journal/${locator.themeid}/graphs`;
+      case 'viewSpecificMetric':
+        return `/graphs/${locator.metrickey}`;
+
   }
 }
 function FullyQualified(locator: Locator): string {

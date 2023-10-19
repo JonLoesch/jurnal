@@ -11,26 +11,26 @@ import {
   UserCircleIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
-import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import logo from "~/images/logo.jpg";
 import { signIn, signOut, useSession } from "next-auth/react";
 import { ifElse } from "~/lib/ifElse";
+import { SafeLink } from "~/lib/urls";
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
 }
 
 interface TopLevelPage {
-  pathname: string;
+  page: "viewTimeline" | "viewMetrics" | "viewJournal";
   title: string;
 }
 
 const top: TopLevelPage[] = [
   // { href: "/", title: "Home" },
-  { pathname: "/journal/[themeid]/posts", title: "Timeline" },
-  { pathname: "/journal/[themeid]/graphs", title: "Graphs" },
+  { page: "viewTimeline", title: "Timeline" },
+  { page: "viewMetrics", title: "Graphs" },
   // { pathname: "/journal/[themeid]/notifications", title: "Notifications" },
   // { href: "/todo", title: "Todo list" },
 ];
@@ -57,20 +57,18 @@ export const Layout: FC<PropsWithChildren<{ themeid: number }>> = (props) => {
                   </div>
                   <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
                     {top.map((t, index) => (
-                      <Link
-                        href={{
-                          pathname: t.pathname,
-                          query: { themeid: props.themeid },
-                        }}
-                        key={t.pathname}
+                      <div
+                        key={t.page}
                         className={`inline-flex items-center border-b-2  px-1 pt-1 text-sm font-medium  ${
-                          t.pathname === pathname
+                          t.page === pathname
                             ? "border-indigo-500 text-gray-500 hover:border-gray-300 hover:text-gray-700"
                             : "border-transparent text-gray-900"
                         }`}
                       >
-                        {t.title}
-                      </Link>
+                        <SafeLink page={t.page} themeid={props.themeid}>
+                          {t.title}
+                        </SafeLink>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -185,18 +183,16 @@ export const Layout: FC<PropsWithChildren<{ themeid: number }>> = (props) => {
                 {/* Current: "bg-indigo-50 border-indigo-500 text-indigo-700", Default: "border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700" */}
 
                 {top.map((t, index) => (
-                  <Link
-                    href={{
-                      pathname: t.pathname,
-                      query: { themeid: props.themeid },
-                    }}
-                    key={t.pathname}
+                  <div
+                    key={t.page}
                     className="block border-l-4 border-transparent text-base font-medium text-gray-500 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700"
                   >
-                    <Disclosure.Button as="div" className="py-2 pl-3 pr-4">
-                      {t.title}
-                    </Disclosure.Button>
-                  </Link>
+                    <SafeLink page={t.page} themeid={props.themeid}>
+                      <Disclosure.Button as="div" className="py-2 pl-3 pr-4">
+                        {t.title}
+                      </Disclosure.Button>
+                    </SafeLink>
+                  </div>
                 ))}
               </div>
               <div className="border-t border-gray-200 pb-3 pt-4">
