@@ -2,7 +2,7 @@ import { CheckIcon, CursorArrowRaysIcon } from "@heroicons/react/24/outline";
 import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import { DeltaStatic } from "quill";
 import { FC, useRef, useState } from "react";
-import ReactQuill from "react-quill";
+import ReactQuill, { UnprivilegedEditor } from "react-quill";
 import { z } from "zod";
 import { JournalScopeLayout } from "~/components/Layout";
 import { getQuillData } from "~/lib/getQuillData";
@@ -49,7 +49,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
 ) => {
   const [dirty, setDirty] = useState(false);
   const editJournal = api.journals.edit.useMutation();
-  const quillRef = useRef<ReactQuill>(null);
+  const editorRef = useRef<UnprivilegedEditor>(null);
 
   const subscribeApi = api.journals.subscribe.useMutation();
   const toast = useToastMessage();
@@ -61,7 +61,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
         <MainSection>
           <StackedForm.Main
             onSubmit={() => {
-              const quillData = getQuillData(quillRef);
+              const quillData = getQuillData(editorRef);
               void editJournal
                 .mutateAsync({
                   themeId: props.theme.id,
@@ -77,7 +77,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
             >
               <StackedForm.SectionItem>
                 <WYSIWYG
-                  quillRef={quillRef}
+                  editorRef={editorRef}
                   editable={props.auth.write}
                   defaultValue={props.theme.quill}
                   onChange={() => {

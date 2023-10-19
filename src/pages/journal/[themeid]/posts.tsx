@@ -70,7 +70,6 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = ({
       page: 'editPost',
       postid: addPost.data,
     });
-    console.log({href,addPost})
     void router.push(href);
   }
   // return (

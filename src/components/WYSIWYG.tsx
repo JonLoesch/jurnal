@@ -10,7 +10,7 @@ import {
 } from "react";
 
 import "react-quill/dist/quill.snow.css";
-import ReactQuill from "react-quill";
+import ReactQuill, { UnprivilegedEditor } from "react-quill";
 import { DeltaStatic } from "quill";
 import { useSession } from "next-auth/react";
 
@@ -18,7 +18,7 @@ export const ClientImpl_WYSIWYG: FC<{
   defaultValue: DeltaStatic | null;
   onChange: () => void;
   editable: boolean;
-  quillRef: RefObject<ReactQuill>;
+  editorRef: MutableRefObject<UnprivilegedEditor|null>;
 }> = (props) => {
   const modules = useMemo(
     () => ({
@@ -53,9 +53,9 @@ export const ClientImpl_WYSIWYG: FC<{
     <ReactQuill
       defaultValue={props.defaultValue ?? undefined}
       // theme="snow"
-      ref={props.quillRef}
       modules={modules}
-      onChange={() => {
+      onChange={(value, delta, source, editor) => {
+        props.editorRef.current = editor;
         props.onChange();
       }}
     />

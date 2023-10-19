@@ -18,7 +18,7 @@ import { authorize } from "~/lib/authorize";
 import { getServerAuthSession } from "~/server/auth";
 import { JournalScopeLayout } from "~/components/Layout";
 import { WYSIWYG } from "~/components/dynamic";
-import ReactQuill from "react-quill";
+import ReactQuill, { UnprivilegedEditor } from "react-quill";
 import { getQuillData } from "~/lib/getQuillData";
 
 export const getServerSideProps = async (
@@ -75,7 +75,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
     setValues((vs) => vs.map((v) => (v.key !== key ? v : { ...v, value })));
     setDirty(true);
   }
-  const quillRef = useRef<ReactQuill>(null);
+  const editorRef = useRef<UnprivilegedEditor>(null);
   const [getPostJson, setPostJson] = useState<
     () => {
       full: DeltaStatic | null;
@@ -95,7 +95,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
         <MainSection>
           <StackedForm.Main
             onSubmit={() => {
-              const postJson = getQuillData(quillRef);
+              const postJson = getQuillData(editorRef);
               void editPost
                 .mutateAsync({
                   postId: props.post.id,
@@ -114,7 +114,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
             >
               <StackedForm.SectionItem>
                 <WYSIWYG
-                  quillRef={quillRef}
+                  editorRef={editorRef}
                   editable={props.auth.write}
                   defaultValue={props.post.postQuill}
                   onChange={() => {

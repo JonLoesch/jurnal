@@ -1,11 +1,11 @@
 "use client";
 import { RefObject } from "react";
-import ReactQuill from "react-quill";
+import ReactQuill, { UnprivilegedEditor } from "react-quill";
 
 
-export function getQuillData(quillRef: RefObject<ReactQuill>) {
+export function getQuillData(editorRef: RefObject<UnprivilegedEditor>) {
   return {
-    full: quillRef.current?.getEditor().getContents() ?? null,
-    firstLine: quillRef.current?.getEditor().getText().replace(/\n.*$/s, "") ?? null,
+    full: editorRef.current?.getContents() ?? null,
+    firstLine: editorRef.current?.getText().replace(/\n.*$/s, "") ?? null,
   };
 }
