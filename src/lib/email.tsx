@@ -41,7 +41,7 @@ const RealEmails: FC<PropsWithChildren> = (props) => {
 };
 
 // TODO change
-const from = 'jonloesch@gmail.com';
+const from = 'onboarding@resend.dev';
 
 export async function sendEmail(props: {
   to: string;
