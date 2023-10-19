@@ -3,21 +3,16 @@ import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { db } from "~/server/db";
 import { authorize } from "~/lib/authorize";
 import { TRPCError } from "@trpc/server";
+import { DeltaStatic } from "quill";
 
-const literalSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
-type Literal = z.infer<typeof literalSchema>;
-type Json = Literal | { [key: string]: Json } | Json[];
-const jsonSchema: z.ZodType<Json> = z.lazy(() =>
-  z.union([literalSchema, z.array(jsonSchema), z.record(jsonSchema)]),
-);
 
 export const postsRouter = createTRPCRouter({
   edit: protectedProcedure
     .input(
       z.object({
         postId: z.number(),
-        firstLine: z.string().optional(),
-        postJson: z.any(),
+        firstLine: z.string().or(z.null()),
+        postJson: z.custom<DeltaStatic>().or(z.null()),
         values: z.record(z.number().or(z.null())),
       }),
     )
@@ -54,8 +49,7 @@ export const postsRouter = createTRPCRouter({
         await db.entry.update({
           where: { id: input.postId },
           data: {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-            postQuill: input.postJson,
+            postQuill: input.postJson ?? undefined,
             postText: input.firstLine,
           },
         });

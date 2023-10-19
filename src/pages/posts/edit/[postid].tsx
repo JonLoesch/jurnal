@@ -20,7 +20,8 @@ import { authorize } from "~/lib/authorize";
 import { getServerAuthSession } from "~/server/auth";
 import { JournalScopeLayout } from "~/components/Layout";
 import { WYSIWYG } from "~/components/dynamic";
-
+import ReactQuill from "react-quill";
+import { getQuillData } from "~/components/WYSIWYG";
 
 export const getServerSideProps = async (
   context: GetServerSidePropsContext,
@@ -76,14 +77,16 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
     setValues((vs) => vs.map((v) => (v.key !== key ? v : { ...v, value })));
     setDirty(true);
   }
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
-  const postJson: DeltaStatic | undefined = props.post.postQuill as any;
+  const quillRef = useRef<ReactQuill>(null);
   const [getPostJson, setPostJson] = useState<
     () => {
-      full: DeltaStatic | undefined;
-      firstLine: string | undefined;
+      full: DeltaStatic | null;
+      firstLine: string | null;
     }
-  >(() => () => ({ full: postJson, firstLine: undefined }));
+  >(() => () => ({
+    full: props.post.postQuill,
+    firstLine: props.post.postText,
+  }));
 
   const editPost = api.posts.edit.useMutation();
 
@@ -94,7 +97,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
         <MainSection>
           <StackedForm.Main
             onSubmit={() => {
-              const postJson = getPostJson();
+              const postJson = getQuillData(quillRef);
               void editPost
                 .mutateAsync({
                   postId: props.post.id,
@@ -113,10 +116,10 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
             >
               <StackedForm.SectionItem>
                 <WYSIWYG
+                  quillRef={quillRef}
                   editable={props.auth.write}
-                  defaultValue={postJson}
-                  onChange={(fetch) => {
-                    setPostJson(() => fetch);
+                  defaultValue={props.post.postQuill}
+                  onChange={() => {
                     setDirty(true);
                   }}
                 />

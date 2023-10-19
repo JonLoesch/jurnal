@@ -5,6 +5,11 @@ generator client {
     provider = "prisma-client-js"
 }
 
+// Always after the prisma-client-js generator
+generator json {
+    provider = "prisma-json-types-generator"
+}
+
 datasource db {
     provider = "postgres"
     // NOTE: When using mysql or sqlserver, uncomment the @db.Text annotations in model Account below
@@ -29,6 +34,7 @@ model Example {
 model Entry {
     id                Int                 @id @default(autoincrement())
     postText          String?
+    /// [QuillData]
     postQuill         Json?
     date              DateTime            @db.Date
     values            Value[]
@@ -70,6 +76,8 @@ model Theme {
     id                Int                 @id @default(autoincrement())
     name              String
     description       String
+    /// [QuillData]
+    quill             Json?
     owner             User                @relation(fields: [ownerId], references: [id])
     ownerId           String
     isPublic          Boolean

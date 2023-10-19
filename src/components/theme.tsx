@@ -117,7 +117,7 @@ export const StackedForm = {
     );
   },
   SectionItem(props: PropsWithChildren) {
-    return <div className="col-span-full"> {props.children}</div>;
+    return <div className="col-span-full bg-white"> {props.children}</div>;
   },
   Section(props: PropsWithChildren<{ title: string; description: string }>) {
     return (

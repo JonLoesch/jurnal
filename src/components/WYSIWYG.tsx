@@ -1,6 +1,13 @@
 "use client";
 
-import { FC, useMemo, useRef, useState } from "react";
+import {
+  FC,
+  MutableRefObject,
+  RefObject,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import "react-quill/dist/quill.snow.css";
 import ReactQuill from "react-quill";
@@ -8,18 +15,11 @@ import { DeltaStatic } from "quill";
 import { useSession } from "next-auth/react";
 
 export const ClientImpl_WYSIWYG: FC<{
-  defaultValue?: DeltaStatic;
-  onChange: (
-    fetchNewValue: () => {
-      full: DeltaStatic | undefined;
-      firstLine: string | undefined;
-    },
-  ) => void;
-  editable: boolean,
+  defaultValue: DeltaStatic | null;
+  onChange: () => void;
+  editable: boolean;
+  quillRef: RefObject<ReactQuill>;
 }> = (props) => {
-  const quillRef = useRef<ReactQuill>(null);
-  const session = useSession();
-
   const modules = useMemo(
     () => ({
       toolbar: [
@@ -41,7 +41,7 @@ export const ClientImpl_WYSIWYG: FC<{
   if (!props.editable) {
     return (
       <ReactQuill
-        defaultValue={props.defaultValue}
+        defaultValue={props.defaultValue ?? undefined}
         className="[&_.ql-editor]:border-t-[1px] [&_.ql-editor]:border-[#ccc] [&_.ql-toolbar]:hidden"
         // theme="snow"
         modules={modules}
@@ -51,16 +51,21 @@ export const ClientImpl_WYSIWYG: FC<{
   }
   return (
     <ReactQuill
-      defaultValue={props.defaultValue}
+      defaultValue={props.defaultValue ?? undefined}
       // theme="snow"
-      ref={quillRef}
+      ref={props.quillRef}
       modules={modules}
       onChange={() => {
-        props.onChange(() => ({
-          full: quillRef.current?.getEditor().getContents(),
-          firstLine: quillRef.current?.getEditor().getText().replace(/\n.*$/s, ""),
-        }));
+        props.onChange();
       }}
     />
   );
 };
+
+export function getQuillData(quillRef: RefObject<ReactQuill>) {
+  return {
+    full: quillRef.current?.getEditor().getContents() ?? null,
+    firstLine:
+      quillRef.current?.getEditor().getText().replace(/\n.*$/s, "") ?? null,
+  };
+}

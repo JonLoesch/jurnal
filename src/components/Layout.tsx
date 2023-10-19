@@ -29,6 +29,7 @@ export const JournalScopeLayout: FC<PropsWithChildren<{ themeid: number }>> = (
     <Layout
       pages={[
         // { href: "/", title: "Home" },
+        { page: "viewJournal", title: "Journal", themeid: props.themeid },
         { page: "viewTimeline", title: "Timeline", themeid: props.themeid },
         { page: "viewMetrics", title: "Graphs", themeid: props.themeid },
         // { pathname: "/journal/[themeid]/notifications", title: "Notifications" },

@@ -24,9 +24,6 @@ import { authorize } from "~/lib/authorize";
 import { JournalScopeLayout } from "~/components/Layout";
 import { RelativeToRoot, SafeLink } from "~/lib/urls";
 
-// export async function VerifyCanReadJournal(context: GetServerSidePropsContext) {
-
-// }
 
 export const getServerSideProps = async (
   context: GetServerSidePropsContext,

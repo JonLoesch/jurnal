@@ -24,6 +24,10 @@ export type Locator =
       page: "viewJournal";
       themeid: number;
     }
+  | {
+      page: "editJournal";
+      themeid: number;
+    }
     | {
       page: 'viewSpecificMetric';
       metrickey: string;
@@ -35,6 +39,8 @@ export function RelativeToRoot(locator: Locator): string {
     case "editPost":
       return `/posts/edit/${locator.postid}`;
     case "viewJournal":
+    case "editJournal":
+      return `/journal/${locator.themeid}`;
     case "viewTimeline":
       return `/journal/${locator.themeid}/posts`;
     case "viewMetrics":
