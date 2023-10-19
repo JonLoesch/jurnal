@@ -23,16 +23,52 @@ export const journalsRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       if (
-        !(await authorize.theme(ctx.db, ctx.session, { id: input.themeId })).write
+        !(await authorize.theme(ctx.db, ctx.session, { id: input.themeId }))
+          .write
       ) {
         throw new TRPCError({ code: "UNAUTHORIZED" });
       }
-        await db.theme.update({
-          where: { id: input.themeId },
-          data: {
-            quill: input.quill ?? undefined,
-            description: input.description ?? undefined,
+      await db.theme.update({
+        where: { id: input.themeId },
+        data: {
+          quill: input.quill ?? undefined,
+          description: input.description ?? undefined,
+        },
+      });
+    }),
+  subscribe: protectedProcedure
+    .input(
+      z.object({
+        themeId: z.number(),
+        subscribe: z.boolean(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (
+        !(await authorize.theme(ctx.db, ctx.session, { id: input.themeId }))
+          .read
+      ) {
+        throw new TRPCError({ code: "UNAUTHORIZED" });
+      }
+
+      const subscription = {
+        themeId: input.themeId,
+        userId: ctx.session.user.id,
+      };
+      if (input.subscribe) {
+        await db.themeSubscription.upsert({
+          where: {
+            themeId_userId: subscription,
           },
+          create: subscription,
+          update: {},
         });
+      } else {
+        await db.themeSubscription.delete({
+          where: {
+            themeId_userId: subscription,
+          }
+        });
+      }
     }),
 });

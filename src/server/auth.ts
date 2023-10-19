@@ -40,13 +40,16 @@ type UserRole = 'journaler' | null;
  */
 export const authOptions: NextAuthOptions = {
   callbacks: {
-    session: ({ session, user }) => ({
-      ...session,
-      user: {
-        ...session.user,
-        role: user.role,
-      },
-    }),
+    session: ({ session, user }) => {
+      return ({
+        ...session,
+        user: {
+          ...session.user,
+          id: user.id,
+          role: user.role,
+        },
+      });
+    },
   },
   adapter: PrismaAdapter(db),
   providers: [

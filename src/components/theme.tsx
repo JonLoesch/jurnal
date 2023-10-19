@@ -72,7 +72,7 @@ export const StackedForm = {
       </div>
     );
   },
-  SectionHeader(props: { title: string; description: string }) {
+  SectionHeader(props: { title: string; description?: string }) {
     return (
       <div className="px-4 sm:px-0">
         <h2 className="text-base font-semibold leading-7 text-gray-900">
@@ -84,41 +84,63 @@ export const StackedForm = {
       </div>
     );
   },
-  TextArea(props: {
-    metricKey: string;
-    label: string;
-    text: string | null;
-    onChange: (text: string | null) => void;
-    placeholder?: string;
-  }) {
+  Checkbox(props: { inputKey: string; label: string, defaultChecked: boolean, onChange: (checked: boolean) => void }) {
     return (
-      <div className="col-span-full">
+      <div className="form-control col-span-full">
         <label
-          htmlFor={props.metricKey}
-          className="block text-sm font-medium leading-6 text-gray-900"
+          htmlFor={props.inputKey}
+          className="label cursor-pointer text-sm font-medium leading-6 text-gray-900 justify-start"
         >
-          {props.label}
-        </label>
-        <div className="mt-2">
-          <textarea
-            id={props.metricKey}
-            name={props.metricKey}
-            rows={3}
-            className="block w-full rounded-md border-0 px-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-            value={props.text ?? ""}
-            onChange={(e) =>
-              props.onChange(e.target.value === "" ? null : e.target.value)
-            }
-            placeholder={props.placeholder}
+          <input
+            type="checkbox"
+            className="checkbox-primary checkbox mr-4 sm:mr-8"
+            name={props.inputKey}
+            id={props.inputKey}
+            defaultChecked={props.defaultChecked}
+            onChange={e => {
+              props.onChange(e.target.checked);
+            }}
           />
-        </div>
+          <span className="label-text">{props.label}</span>
+        </label>
       </div>
     );
   },
+  // TextArea(props: {
+  //   metricKey: string;
+  //   label: string;
+  //   text: string | null;
+  //   onChange: (text: string | null) => void;
+  //   placeholder?: string;
+  // }) {
+  //   return (
+  //     <div className="col-span-full form-control">
+  //       <label
+  //         htmlFor={props.metricKey}
+  //         className="block text-sm font-medium leading-6 text-gray-900"
+  //       >
+  //         {props.label}
+  //       </label>
+  //       <div className="mt-2">
+  //         <textarea
+  //           id={props.metricKey}
+  //           name={props.metricKey}
+  //           rows={3}
+  //           className="block w-full rounded-md border-0 px-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+  //           value={props.text ?? ""}
+  //           onChange={(e) =>
+  //             props.onChange(e.target.value === "" ? null : e.target.value)
+  //           }
+  //           placeholder={props.placeholder}
+  //         />
+  //       </div>
+  //     </div>
+  //   );
+  // },
   SectionItem(props: PropsWithChildren) {
     return <div className="col-span-full bg-white"> {props.children}</div>;
   },
-  Section(props: PropsWithChildren<{ title: string; description: string }>) {
+  Section(props: PropsWithChildren<{ title: string; description?: string }>) {
     return (
       <div className="grid grid-cols-1 gap-x-8 gap-y-8 pt-10 first:pt-0 md:grid-cols-3">
         <StackedForm.SectionHeader

@@ -2,15 +2,17 @@ import { Prisma, PrismaClient } from "@prisma/client";
 import { GetServerSideProps, GetServerSidePropsResult } from "next";
 import { Session, User } from "next-auth";
 
-type AuthorizedRoles =
+type AuthorizedRoles = (
   | {
       read: boolean;
       write: boolean;
       themeid: number;
     }
-  | {
+    | {
       read: false;
       write: false;
+    }) & {
+      userId?: string;
     };
 
 function checkThemeAccess(
@@ -36,7 +38,7 @@ function checkThemeAccess(
     theme.reader.some((r) => r.email === session?.user.email) ||
     theme.isPublic;
 
-  return { read, write, themeid: theme.id };
+  return { read, write, themeid: theme.id, userId: session?.user.id };
 }
 
 const redirectToLogin: GetServerSidePropsResult<unknown> = {

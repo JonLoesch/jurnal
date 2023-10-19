@@ -12,6 +12,7 @@ import { authorize } from "~/lib/authorize";
 import { getServerAuthSession } from "~/server/auth";
 import { db } from "~/server/db";
 import { api } from "~/utils/api";
+import { Toast, useToastMessage } from "~/lib/useToastMessage";
 
 export const getServerSideProps = async (
   context: GetServerSidePropsContext,
@@ -28,7 +29,16 @@ export const getServerSideProps = async (
   }
   return {
     props: {
-      theme: await db.theme.findUniqueOrThrow({ where: { id: auth.themeid } }),
+      theme: await db.theme.findUniqueOrThrow({
+        where: { id: auth.themeid },
+        include: {
+          themeSubscription: {
+            where: {
+              userId: auth.userId,
+            },
+          },
+        },
+      }),
       auth,
     },
   };
@@ -41,6 +51,9 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
   const editJournal = api.journals.edit.useMutation();
   const quillRef = useRef<ReactQuill>(null);
 
+  const subscribeApi = api.journals.subscribe.useMutation();
+  const toast = useToastMessage();
+
   return (
     <JournalScopeLayout themeid={props.auth.themeid}>
       <FullPage>
@@ -48,7 +61,6 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
         <MainSection>
           <StackedForm.Main
             onSubmit={() => {
-              debugger;
               const quillData = getQuillData(quillRef);
               void editJournal
                 .mutateAsync({
@@ -59,27 +71,55 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
                 .then(() => setDirty(false));
             }}
           >
-            <StackedForm.SectionItem>
-              <WYSIWYG
-                quillRef={quillRef}
-                editable={props.auth.write}
-                defaultValue={props.theme.quill}
-                onChange={() => {
-                  setDirty(true);
+            <StackedForm.Section
+              title="Description"
+              description="What's this journal all about?"
+            >
+              <StackedForm.SectionItem>
+                <WYSIWYG
+                  quillRef={quillRef}
+                  editable={props.auth.write}
+                  defaultValue={props.theme.quill}
+                  onChange={() => {
+                    setDirty(true);
+                  }}
+                />
+              </StackedForm.SectionItem>
+              <StackedForm.ButtonPanel>
+                <StackedForm.SubmitButton disabled={!dirty} label="Save">
+                  {editJournal.isLoading && (
+                    <CursorArrowRaysIcon className="w-8" />
+                  )}
+                  {editJournal.isSuccess && <CheckIcon className="w-8" />}
+                </StackedForm.SubmitButton>
+              </StackedForm.ButtonPanel>
+            </StackedForm.Section>
+            <StackedForm.Section title="Notifications">
+              <StackedForm.Checkbox
+                label="Sign up for daily email updates"
+                inputKey="dailyNotifications"
+                defaultChecked={props.theme.themeSubscription.length > 0}
+                onChange={(x) => {
+                  void subscribeApi
+                    .mutateAsync({
+                      subscribe: x,
+                      themeId: props.theme.id,
+                    })
+                    .then(() => {
+                      toast.newToast(
+                        `Successfully ${
+                          x ? "subscribed to" : "unsubscribed from"
+                        } notifications to this journal`,
+                        400000,
+                      );
+                    });
                 }}
               />
-            </StackedForm.SectionItem>
-            <StackedForm.ButtonPanel>
-              <StackedForm.SubmitButton disabled={!dirty} label="Save">
-                {editJournal.isLoading && (
-                  <CursorArrowRaysIcon className="w-8" />
-                )}
-                {editJournal.isSuccess && <CheckIcon className="w-8" />}
-              </StackedForm.SubmitButton>
-            </StackedForm.ButtonPanel>
+            </StackedForm.Section>
           </StackedForm.Main>
         </MainSection>
       </FullPage>
+      <Toast {...toast}/>
     </JournalScopeLayout>
   );
 };
