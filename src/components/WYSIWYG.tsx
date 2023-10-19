@@ -43,8 +43,8 @@ export const WYSIWYG: FC<{
     return (
       <ReactQuill
         defaultValue={props.defaultValue}
-        className="[&_.ql-editor_p]:post [&_.ql-editor]:border-t-[1px] [&_.ql-editor]:border-[#ccc] [&_.ql-toolbar]:hidden"
-        theme="snow"
+        className="[&_.ql-editor]:border-t-[1px] [&_.ql-editor]:border-[#ccc] [&_.ql-toolbar]:hidden"
+        // theme="snow"
         modules={modules}
         readOnly
       />
@@ -53,8 +53,7 @@ export const WYSIWYG: FC<{
   return (
     <ReactQuill
       defaultValue={props.defaultValue}
-      className="[&_.ql-editor_p]:post"
-      theme="snow"
+      // theme="snow"
       ref={quillRef}
       modules={modules}
       onChange={() => {

@@ -6,11 +6,16 @@
   .grid-cell-90 {
     grid-template-columns: repeat(auto-fit, minmax(22.5rem, 1fr));
   }
-  post {
-    @apply my-3 indent-8;
-  }
 
   body {
-    @apply bg-white
+    @apply bg-white;
+  }
+}
+
+#app {
+  .ql-editor {
+    p {
+      @apply my-3 indent-8;
+    }
   }
 }
