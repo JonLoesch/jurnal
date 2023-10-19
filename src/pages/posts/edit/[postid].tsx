@@ -13,7 +13,6 @@ import { isDirty, z } from "zod";
 import { MetricAdjust, MetricBadge } from "~/components/MetricAdjust";
 import { FullPage, MainSection, StackedForm, Title } from "~/components/theme";
 import { db } from "~/server/db";
-import dynamic from "next/dynamic";
 import { api } from "~/utils/api";
 import { CheckIcon, CursorArrowRaysIcon } from "@heroicons/react/24/outline";
 import { type DeltaStatic } from "quill";
@@ -21,13 +20,8 @@ import { Zoneless } from "~/lib/ZonelessDate";
 import { authorize } from "~/lib/authorize";
 import { getServerAuthSession } from "~/server/auth";
 import { Layout } from "~/components/Layout";
+import { WYSIWYG } from "~/components/dynamic";
 
-const WYSIWYG = dynamic(
-  () => import("~/components/WYSIWYG").then((x) => x.WYSIWYG),
-  {
-    ssr: false,
-  },
-);
 
 export const getServerSideProps = async (
   context: GetServerSidePropsContext,

@@ -5,12 +5,7 @@ import {
   InferGetServerSidePropsType,
 } from "next";
 import { useRouter } from "next/router";
-import { CartesianGrid, Line, Tooltip, XAxis, YAxis } from "recharts";
-import dynamic from "next/dynamic";
-
-const LineChart = dynamic(() => import("recharts").then((x) => x.LineChart), {
-  ssr: false,
-});
+import { CartesianGrid, Line, LineChart, Tooltip, XAxis, YAxis } from "recharts";
 
 import { z } from "zod";
 import { getMetricMetadata } from "~/lib/getMetricMetadata";

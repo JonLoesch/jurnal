@@ -7,8 +7,7 @@ import ReactQuill from "react-quill";
 import { DeltaStatic } from "quill";
 import { useSession } from "next-auth/react";
 
-// eslint-disable-next-line @typescript-eslint/ban-types
-export const WYSIWYG: FC<{
+export const ClientImpl_WYSIWYG: FC<{
   defaultValue?: DeltaStatic;
   onChange: (
     fetchNewValue: () => {
