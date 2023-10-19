@@ -27,13 +27,23 @@ model Example {
 }
 
 model Entry {
-    id        Int      @id @default(autoincrement())
-    postText  String?
-    postQuill Json?
-    date      DateTime @db.Date
-    values    Value[]
-    theme     Theme    @relation(fields: [themeId], references: [id])
-    themeId   Int
+    id                Int                 @id @default(autoincrement())
+    postText          String?
+    postQuill         Json?
+    date              DateTime            @db.Date
+    values            Value[]
+    theme             Theme               @relation(fields: [themeId], references: [id])
+    themeId           Int
+    entrySubscription EntrySubscription[]
+}
+
+model EntrySubscription {
+    entry   Entry  @relation(fields: [entryId], references: [id])
+    user    User   @relation(fields: [userId], references: [id])
+    entryId Int    @map("entry_id")
+    userId  String @map("user_id")
+
+    @@id([entryId, userId])
 }
 
 model Value {
@@ -57,15 +67,25 @@ model Metric {
 }
 
 model Theme {
-    id          Int      @id @default(autoincrement())
-    name        String
-    description String
-    owner       User     @relation(fields: [ownerId], references: [id])
-    ownerId     String
-    isPublic    Boolean
-    reader      Reader[]
-    entry       Entry[]
-    metric      Metric[]
+    id                Int                 @id @default(autoincrement())
+    name              String
+    description       String
+    owner             User                @relation(fields: [ownerId], references: [id])
+    ownerId           String
+    isPublic          Boolean
+    reader            Reader[]
+    entry             Entry[]
+    metric            Metric[]
+    themeSubscription ThemeSubscription[]
+}
+
+model ThemeSubscription {
+    theme   Theme  @relation(fields: [themeId], references: [id])
+    user    User   @relation(fields: [userId], references: [id])
+    themeId Int    @map("theme_id")
+    userId  String @map("user_id")
+
+    @@id([themeId, userId])
 }
 
 model Reader {
@@ -103,15 +123,17 @@ model Session {
 }
 
 model User {
-    id            String    @id @default(cuid())
-    name          String?
-    email         String?   @unique
-    emailVerified DateTime?
-    image         String?
-    role          String?
-    accounts      Account[]
-    sessions      Session[]
-    Theme         Theme[]
+    id                String              @id @default(cuid())
+    name              String?
+    email             String?             @unique
+    emailVerified     DateTime?
+    image             String?
+    role              String?
+    accounts          Account[]
+    sessions          Session[]
+    Theme             Theme[]
+    entrySubscription EntrySubscription[]
+    themeSubscription ThemeSubscription[]
 }
 
 model VerificationToken {

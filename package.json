@@ -22,6 +22,7 @@
     "@react-email/container": "0.0.8",
     "@react-email/html": "0.0.4",
     "@react-email/link": "0.0.5",
+    "@react-email/render": "^0.0.7",
     "@react-email/section": "0.0.9",
     "@react-email/text": "0.0.5",
     "@t3-oss/env-nextjs": "^0.6.0",
@@ -44,6 +45,7 @@
     "react-email": "1.9.5",
     "react-quill": "^2.0.0",
     "recharts": "^2.8.0",
+    "resend": "^1.1.0",
     "superjson": "^1.13.1",
     "zod": "^3.21.4"
   },

@@ -168,19 +168,4 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
   );
 };
 
-export const LinkToEditPost: FC<PropsWithChildren<{ postid: number }>> = (
-  props,
-) => {
-  return (
-    <Link
-      href={{
-        pathname: "/posts/edit/[postid]",
-        query: { postid: props.postid },
-      }}
-    >
-      {props.children}
-    </Link>
-  );
-};
-
 export default Page;

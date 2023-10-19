@@ -9,7 +9,6 @@ import {
 import { useSession } from "next-auth/react";
 import { FC } from "react";
 import { db } from "~/server/db";
-import { LinkToEditPost } from "../../posts/edit/[postid]";
 import { api } from "~/utils/api";
 import { useRouter } from "next/router";
 import PulseIcon from "~/images/heart-pulse-solid.svg";
@@ -23,6 +22,7 @@ import { getServerAuthSession } from "~/server/auth";
 import { ParsedUrlQuery } from "querystring";
 import { authorize } from "~/lib/authorize";
 import { Layout } from "~/components/Layout";
+import { RelativeToRoot, SafeLink } from "~/lib/urls";
 
 // export async function VerifyCanReadJournal(context: GetServerSidePropsContext) {
 
@@ -71,10 +71,10 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = ({
 
   if (addPost.isSuccess) {
     void router.push({
-      pathname: "/posts/edit/[postid]",
-      query: {
+      href: RelativeToRoot({
+        page: 'editPost',
         postid: addPost.data,
-      },
+      })
     });
   }
   // return (
@@ -98,7 +98,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = ({
                   : "journal_entry";
               return (
                 <li key={getUnixTime(date)}>
-                  <LinkToEditPost postid={entry.id}>
+                  <SafeLink page="viewPost" postid={entry.id}>
                     <div className="relative pb-8">
                       {index !== entries.length - 1 ? (
                         <span
@@ -150,7 +150,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = ({
                         </div>
                       </div>
                     </div>
-                  </LinkToEditPost>
+                  </SafeLink>
                 </li>
               );
             })}
