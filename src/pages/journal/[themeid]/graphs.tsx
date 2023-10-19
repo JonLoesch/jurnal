@@ -3,7 +3,7 @@ import { Prisma } from "@prisma/client";
 import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import { FC, PropsWithChildren } from "react";
 import { z } from "zod";
-import { Layout } from "~/components/Layout";
+import { JournalScopeLayout } from "~/components/Layout";
 import { authorize } from "~/lib/authorize";
 import { getMetricMetadata } from "~/lib/getMetricMetadata";
 import { SafeLink } from "~/lib/urls";
@@ -121,8 +121,8 @@ export default function Page(
   props: InferGetServerSidePropsType<typeof getServerSideProps>,
 ) {
   return (
-    <Layout themeid={props.auth.themeid}>
+    <JournalScopeLayout themeid={props.auth.themeid}>
       <GraphLayout metrics={props.metrics} />
-    </Layout>
+    </JournalScopeLayout>
   );
 }

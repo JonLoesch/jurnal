@@ -18,7 +18,7 @@ import { type DeltaStatic } from "quill";
 import { Zoneless } from "~/lib/ZonelessDate";
 import { authorize } from "~/lib/authorize";
 import { getServerAuthSession } from "~/server/auth";
-import { Layout } from "~/components/Layout";
+import { JournalScopeLayout } from "~/components/Layout";
 import { WYSIWYG } from "~/components/dynamic";
 
 
@@ -88,7 +88,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
   const editPost = api.posts.edit.useMutation();
 
   return (
-    <Layout themeid={props.auth.themeid}>
+    <JournalScopeLayout themeid={props.auth.themeid}>
       <FullPage>
         <Title>{format(Zoneless.toDate(props.post.date), "EEEE MMMM d")}</Title>
         <MainSection>
@@ -157,7 +157,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
           </StackedForm.Main>
         </MainSection>
       </FullPage>
-    </Layout>
+    </JournalScopeLayout>
   );
 };
 

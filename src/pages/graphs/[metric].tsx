@@ -12,7 +12,7 @@ import { getMetricMetadata } from "~/lib/getMetricMetadata";
 import { GraphLayout } from "~/pages/journal/[themeid]/graphs";
 import { db } from "~/server/db";
 import { Zoneless } from "~/lib/ZonelessDate";
-import { Layout } from "~/components/Layout";
+import { JournalScopeLayout } from "~/components/Layout";
 import { authorize } from "~/lib/authorize";
 import { getServerAuthSession } from "~/server/auth";
 
@@ -58,7 +58,7 @@ export default function Page(
   props: InferGetServerSidePropsType<typeof getServerSideProps>,
 ) {
   return (
-    <Layout themeid={props.auth.themeid}>
+    <JournalScopeLayout themeid={props.auth.themeid}>
       <GraphLayout metrics={props.metrics} hideOnSmall>
         <LineChart
           width={400}
@@ -76,6 +76,6 @@ export default function Page(
           <Tooltip />
         </LineChart>
       </GraphLayout>
-    </Layout>
+    </JournalScopeLayout>
   );
 }

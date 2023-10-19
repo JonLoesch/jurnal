@@ -16,26 +16,33 @@ import { usePathname } from "next/navigation";
 import logo from "~/images/logo.jpg";
 import { signIn, signOut, useSession } from "next-auth/react";
 import { ifElse } from "~/lib/ifElse";
-import { SafeLink } from "~/lib/urls";
+import { Locator, SafeLink } from "~/lib/urls";
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
 }
 
-interface TopLevelPage {
-  page: "viewTimeline" | "viewMetrics" | "viewJournal";
-  title: string;
-}
+export const JournalScopeLayout: FC<PropsWithChildren<{ themeid: number }>> = (
+  props,
+) => {
+  return (
+    <Layout
+      pages={[
+        // { href: "/", title: "Home" },
+        { page: "viewTimeline", title: "Timeline", themeid: props.themeid },
+        { page: "viewMetrics", title: "Graphs", themeid: props.themeid },
+        // { pathname: "/journal/[themeid]/notifications", title: "Notifications" },
+        // { href: "/todo", title: "Todo list" },
+      ]}
+    >
+      {props.children}
+    </Layout>
+  );
+};
 
-const top: TopLevelPage[] = [
-  // { href: "/", title: "Home" },
-  { page: "viewTimeline", title: "Timeline" },
-  { page: "viewMetrics", title: "Graphs" },
-  // { pathname: "/journal/[themeid]/notifications", title: "Notifications" },
-  // { href: "/todo", title: "Todo list" },
-];
-
-export const Layout: FC<PropsWithChildren<{ themeid: number }>> = (props) => {
+const Layout: FC<
+  PropsWithChildren<{ pages: Array<Locator & { title: string }> }>
+> = (props) => {
   const pathname = usePathname();
   const session = useSession();
 
@@ -56,18 +63,16 @@ export const Layout: FC<PropsWithChildren<{ themeid: number }>> = (props) => {
                     />
                   </div>
                   <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-                    {top.map((t, index) => (
+                    {props.pages.map((p) => (
                       <div
-                        key={t.page}
+                        key={p.page}
                         className={`inline-flex items-center border-b-2  px-1 pt-1 text-sm font-medium  ${
-                          t.page === pathname
+                          p.page === pathname
                             ? "border-indigo-500 text-gray-500 hover:border-gray-300 hover:text-gray-700"
                             : "border-transparent text-gray-900"
                         }`}
                       >
-                        <SafeLink page={t.page} themeid={props.themeid}>
-                          {t.title}
-                        </SafeLink>
+                        <SafeLink {...p}>{p.title}</SafeLink>
                       </div>
                     ))}
                   </div>
@@ -182,14 +187,14 @@ export const Layout: FC<PropsWithChildren<{ themeid: number }>> = (props) => {
               <div className="space-y-1 pb-3 pt-2">
                 {/* Current: "bg-indigo-50 border-indigo-500 text-indigo-700", Default: "border-transparent text-gray-500 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-700" */}
 
-                {top.map((t, index) => (
+                {props.pages.map((p) => (
                   <div
-                    key={t.page}
+                    key={p.page}
                     className="block border-l-4 border-transparent text-base font-medium text-gray-500 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700"
                   >
-                    <SafeLink page={t.page} themeid={props.themeid}>
+                    <SafeLink {...p}>
                       <Disclosure.Button as="div" className="py-2 pl-3 pr-4">
-                        {t.title}
+                        {p.title}
                       </Disclosure.Button>
                     </SafeLink>
                   </div>

@@ -21,7 +21,7 @@ import { getServerSession } from "next-auth";
 import { getServerAuthSession } from "~/server/auth";
 import { ParsedUrlQuery } from "querystring";
 import { authorize } from "~/lib/authorize";
-import { Layout } from "~/components/Layout";
+import { JournalScopeLayout } from "~/components/Layout";
 import { RelativeToRoot, SafeLink } from "~/lib/urls";
 
 // export async function VerifyCanReadJournal(context: GetServerSidePropsContext) {
@@ -85,7 +85,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = ({
   //   </span>
   // );
   return (
-    <Layout themeid={auth.themeid}>
+    <JournalScopeLayout themeid={auth.themeid}>
       <FullPage>
         <Title>Timeline</Title>
         <MainSection>
@@ -170,7 +170,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = ({
           )}
         </MainSection>
       </FullPage>
-    </Layout>
+    </JournalScopeLayout>
   );
 };
 export default Page;
