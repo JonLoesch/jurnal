@@ -5,8 +5,6 @@ import {
   InferGetServerSidePropsType,
   InferGetStaticPropsType,
 } from "next";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/router";
 import { FC, PropsWithChildren, useRef, useState } from "react";
 import { isDirty, z } from "zod";
 import { MetricAdjust, MetricBadge } from "~/components/MetricAdjust";

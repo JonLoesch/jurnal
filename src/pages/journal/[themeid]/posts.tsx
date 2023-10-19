@@ -64,15 +64,14 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = ({
 }) => {
   const addPost = api.posts.create.useMutation();
   const router = useRouter();
-  const session = useSession();
 
   if (addPost.isSuccess) {
-    void router.push({
-      href: RelativeToRoot({
-        page: 'editPost',
-        postid: addPost.data,
-      })
+    const href = RelativeToRoot({
+      page: 'editPost',
+      postid: addPost.data,
     });
+    console.log({href,addPost})
+    void router.push(href);
   }
   // return (
   //   <span className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500 ring-8 ring-white">

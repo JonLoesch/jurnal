@@ -2,7 +2,7 @@ import Link from "next/link";
 import { PropsWithChildren, ReactNode } from "react";
 import { env } from "~/env.mjs";
 import { Link as UnderlyingEmailLink } from "@react-email/link";
-import { useRouter } from "next/router";
+import { usePathname } from "next/navigation";
 
 export type Locator =
   | {
@@ -67,9 +67,9 @@ function FullyQualified(locator: Locator): string {
 }
 export function SafeLink(props: PropsWithChildren<Locator>): ReactNode {
   const href = RelativeToRoot(props);
-  const router = useRouter();
+  const currentPath = usePathname();
 
-  const isActive = router.isReady && pathnameOf(href) === pathnameOf(router.asPath);
+  const isActive = pathnameOf(href) === pathnameOf(currentPath);
   return <Link href={href} className={isActive ? 'link-active' : ''}>{props.children}</Link>;
 
   function pathnameOf(href: string) {
