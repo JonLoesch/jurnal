@@ -1,0 +1,6 @@
+{
+    "crons": [{
+      "path": "/api/cron/send_newpost_notifications",
+      "schedule": "0 14 * * *"
+    }]
+  }
