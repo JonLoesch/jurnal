@@ -21,7 +21,7 @@ import { getServerAuthSession } from "~/server/auth";
 import { JournalScopeLayout } from "~/components/Layout";
 import { WYSIWYG } from "~/components/dynamic";
 import ReactQuill from "react-quill";
-import { getQuillData } from "~/components/WYSIWYG";
+import { getQuillData } from "~/lib/getQuillData";
 
 export const getServerSideProps = async (
   context: GetServerSidePropsContext,

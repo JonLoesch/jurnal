@@ -5,7 +5,7 @@ import { FC, useRef, useState } from "react";
 import ReactQuill from "react-quill";
 import { z } from "zod";
 import { JournalScopeLayout } from "~/components/Layout";
-import { getQuillData } from "~/components/WYSIWYG";
+import { getQuillData } from "~/lib/getQuillData";
 import { WYSIWYG } from "~/components/dynamic";
 import { FullPage, MainSection, StackedForm, Title } from "~/components/theme";
 import { authorize } from "~/lib/authorize";

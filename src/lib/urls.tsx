@@ -5,6 +5,12 @@ import { Link as UnderlyingEmailLink } from "@react-email/link";
 
 export type Locator =
   | {
+      page: "index";
+    }
+    | {
+      page: "myJournals";
+    }
+  | {
       page: "viewPost";
       postid: number;
     }
@@ -35,6 +41,10 @@ export type Locator =
 
 export function RelativeToRoot(locator: Locator): string {
   switch (locator.page) {
+    case "index":
+      return `/`;
+    case "myJournals":
+      return `/journals`;
     case "viewPost":
     case "editPost":
       return `/posts/edit/${locator.postid}`;
