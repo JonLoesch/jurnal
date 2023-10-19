@@ -2,6 +2,7 @@ import Link from "next/link";
 import { PropsWithChildren, ReactNode } from "react";
 import { env } from "~/env.mjs";
 import { Link as UnderlyingEmailLink } from "@react-email/link";
+import { useRouter } from "next/router";
 
 export type Locator =
   | {
@@ -65,7 +66,16 @@ function FullyQualified(locator: Locator): string {
   return `${env.NEXTAUTH_URL}${RelativeToRoot(locator)}`;
 }
 export function SafeLink(props: PropsWithChildren<Locator>): ReactNode {
-  return <Link href={RelativeToRoot(props)}>{props.children}</Link>;
+  const href = RelativeToRoot(props);
+  const router = useRouter();
+
+  const isActive = router.isReady && pathnameOf(href) === pathnameOf(router.asPath);
+  return <Link href={href} className={isActive ? 'link-active' : ''}>{props.children}</Link>;
+
+  function pathnameOf(href: string) {
+    return href;
+    return new URL(href).pathname;
+  }
 }
 export function EmailLink(props: PropsWithChildren<Locator>): ReactNode {
   return (
