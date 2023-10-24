@@ -109,7 +109,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
                       toast.newToast(
                         `Successfully ${
                           x ? "subscribed to" : "unsubscribed from"
-                        } notifications to this journal`,
+                        } notifications from this journal`,
                         400000,
                       );
                     });
