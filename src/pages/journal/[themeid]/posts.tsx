@@ -24,7 +24,6 @@ import { authorize } from "~/lib/authorize";
 import { JournalScopeLayout } from "~/components/Layout";
 import { RelativeToRoot, SafeLink } from "~/lib/urls";
 
-
 export const getServerSideProps = async (
   context: GetServerSidePropsContext,
 ) => {
@@ -48,7 +47,7 @@ export const getServerSideProps = async (
           },
           where: {
             themeId: auth.themeid,
-          }
+          },
         })
       ).map(({ date, ...rest }) => ({
         ...rest,
@@ -67,7 +66,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = ({
 
   if (addPost.isSuccess) {
     const href = RelativeToRoot({
-      page: 'editPost',
+      page: "editPost",
       postid: addPost.data,
     });
     void router.push(href);
@@ -156,7 +155,10 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = ({
               <button
                 className="btn btn-primary"
                 onClick={() => {
-                  addPost.mutate({themeId: auth.themeid});
+                  addPost.mutate({
+                    themeId: auth.themeid,
+                    date: Zoneless.fromDate(new Date()),
+                  });
                 }}
               >
                 New Post

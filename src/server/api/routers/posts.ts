@@ -4,7 +4,7 @@ import { db } from "~/server/db";
 import { authorize } from "~/lib/authorize";
 import { TRPCError } from "@trpc/server";
 import { DeltaStatic } from "quill";
-
+import { Zoneless } from "~/lib/ZonelessDate";
 
 export const postsRouter = createTRPCRouter({
   edit: protectedProcedure
@@ -56,10 +56,11 @@ export const postsRouter = createTRPCRouter({
       });
     }),
   create: protectedProcedure
-    .input(z.object({ themeId: z.number() }))
+    .input(z.object({ themeId: z.number(), date: Zoneless.zod }))
     .mutation(async ({ ctx, input }) => {
       if (
-        !(await authorize.theme(ctx.db, ctx.session, { id: input.themeId })).write
+        !(await authorize.theme(ctx.db, ctx.session, { id: input.themeId }))
+          .write
       ) {
         throw new TRPCError({ code: "UNAUTHORIZED" });
       }
@@ -67,7 +68,7 @@ export const postsRouter = createTRPCRouter({
         await db.entry.create({
           data: {
             themeId: input.themeId,
-            date: new Date(),
+            date: Zoneless.toDate(input.date),
           },
         })
       ).id;
