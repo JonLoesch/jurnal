@@ -12,7 +12,7 @@ export const env = createEnv({
       .url()
       .refine(
         (str) => !str.includes("YOUR_MYSQL_URL_HERE"),
-        "You forgot to change the default URL"
+        "You forgot to change the default URL",
       ),
     NODE_ENV: z
       .enum(["development", "test", "production"])
@@ -26,13 +26,16 @@ export const env = createEnv({
       // Since NextAuth.js automatically uses the VERCEL_URL if present.
       (str) => process.env.VERCEL_URL ?? str,
       // VERCEL_URL doesn't include `https` so it cant be validated as a URL
-      process.env.VERCEL ? z.string().min(1) : z.string().url()
+      process.env.VERCEL ? z.string().min(1) : z.string().url(),
     ),
     GOOGLE_CLIENT_ID: z.string().min(1),
     GOOGLE_CLIENT_SECRET: z.string().min(1),
     RESEND_KEY: z.string().min(1),
     CRON_SECRET: z.string().min(1),
-    REAL_EMAILS: z.boolean(),
+    REAL_EMAILS: z
+      .string()
+      .optional()
+      .transform((x) => x === "send_real_emails"),
   },
 
   /**
@@ -57,7 +60,7 @@ export const env = createEnv({
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
     RESEND_KEY: process.env.RESEND_KEY,
     CRON_SECRET: process.env.CRON_SECRET,
-    REAL_EMAILS: process.env.REAL_EMAILS === 'send_real_emails',
+    REAL_EMAILS: process.env.REAL_EMAILS,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially
