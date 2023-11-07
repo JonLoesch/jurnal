@@ -43,7 +43,7 @@ export const getServerSideProps = async (
       entries: (
         await db.entry.findMany({
           orderBy: {
-            date: "asc",
+            date: "desc",
           },
           where: {
             themeId: auth.themeid,
