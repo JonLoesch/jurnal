@@ -7,7 +7,13 @@ import { z } from "zod";
 import { JournalScopeLayout } from "~/components/Layout";
 import { getQuillData } from "~/lib/getQuillData";
 import { WYSIWYG } from "~/components/dynamic";
-import { FullPage, MainSection, StackedForm, Title } from "~/components/theme";
+import {
+  FullPage,
+  Header,
+  MainSection,
+  StackedForm,
+  Title,
+} from "~/components/theme";
 import { authorize } from "~/lib/authorize";
 import { getServerAuthSession } from "~/server/auth";
 import { db } from "~/server/db";
@@ -57,7 +63,9 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
   return (
     <JournalScopeLayout themeid={props.auth.themeid}>
       <FullPage>
-        <Title>{props.theme.name}</Title>
+        <Header>
+          <Title>{props.theme.name}</Title>
+        </Header>
         <MainSection>
           <StackedForm.Main
             onSubmit={() => {
@@ -119,7 +127,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
           </StackedForm.Main>
         </MainSection>
       </FullPage>
-      <Toast {...toast}/>
+      <Toast {...toast} />
     </JournalScopeLayout>
   );
 };

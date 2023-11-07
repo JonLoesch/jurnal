@@ -8,7 +8,7 @@ export type Locator =
   | {
       page: "index";
     }
-    | {
+  | {
       page: "myJournals";
     }
   | {
@@ -35,10 +35,14 @@ export type Locator =
       page: "editJournal";
       themeid: number;
     }
-    | {
-      page: 'viewSpecificMetric';
+  | {
+      page: "viewSpecificMetric";
       metrickey: string;
     };
+
+export type OptionalLocator =
+  | (Locator & { link?: "enabled" })
+  | (Partial<Locator> & { link: "disabled" });
 
 export function RelativeToRoot(locator: Locator): string {
   switch (locator.page) {
@@ -56,21 +60,27 @@ export function RelativeToRoot(locator: Locator): string {
       return `/journal/${locator.themeid}/posts`;
     case "viewMetrics":
       return `/journal/${locator.themeid}/graphs`;
-      case 'viewSpecificMetric':
-        return `/graphs/${locator.metrickey}`;
-
+    case "viewSpecificMetric":
+      return `/graphs/${locator.metrickey}`;
   }
 }
 function FullyQualified(locator: Locator): string {
   // slightly lazy here to reuse the NEXTAUTH env var :(
   return `${env.NEXTAUTH_URL}${RelativeToRoot(locator)}`;
 }
-export function SafeLink(props: PropsWithChildren<Locator>): ReactNode {
-  const href = RelativeToRoot(props);
+export function SafeLink(props: PropsWithChildren<OptionalLocator>): ReactNode {
   const currentPath = usePathname();
+  if (props.link === "disabled") {
+    return <div>{props.children}</div>;
+  }
+  const href = RelativeToRoot(props);
 
   const isActive = pathnameOf(href) === pathnameOf(currentPath);
-  return <Link href={href} className={isActive ? 'link-active' : ''}>{props.children}</Link>;
+  return (
+    <Link href={href} className={isActive ? "link-active" : ""}>
+      {props.children}
+    </Link>
+  );
 
   function pathnameOf(href: string) {
     return href;

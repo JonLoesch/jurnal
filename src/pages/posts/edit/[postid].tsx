@@ -8,10 +8,22 @@ import {
 import { FC, PropsWithChildren, useRef, useState } from "react";
 import { isDirty, z } from "zod";
 import { MetricAdjust, MetricBadge } from "~/components/MetricAdjust";
-import { FullPage, MainSection, StackedForm, Title } from "~/components/theme";
+import {
+  FullPage,
+  Header,
+  MainSection,
+  StackedForm,
+  Subtitle,
+  Title,
+} from "~/components/theme";
 import { db } from "~/server/db";
 import { api } from "~/utils/api";
-import { CheckIcon, CursorArrowRaysIcon } from "@heroicons/react/24/outline";
+import {
+  CheckIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  CursorArrowRaysIcon,
+} from "@heroicons/react/24/outline";
 import { type DeltaStatic } from "quill";
 import { Zoneless } from "~/lib/ZonelessDate";
 import { authorize } from "~/lib/authorize";
@@ -20,6 +32,8 @@ import { JournalScopeLayout } from "~/components/Layout";
 import { WYSIWYG } from "~/components/dynamic";
 import ReactQuill, { UnprivilegedEditor } from "react-quill";
 import { getQuillData } from "~/lib/getQuillData";
+import { OptionalLocator, SafeLink } from "~/lib/urls";
+import { cl } from "~/lib/cl";
 
 export const getServerSideProps = async (
   context: GetServerSidePropsContext,
@@ -36,6 +50,39 @@ export const getServerSideProps = async (
     where: {
       id: postId,
     },
+  });
+  const next = await db.entry.findFirst({
+    where: {
+      OR: [
+        {
+          date: {
+            gt: date,
+          },
+        },
+        {
+          date: { gte: date },
+          id: { gt: post.id },
+        },
+      ],
+    },
+    orderBy: [{ date: "asc" }, { id: "asc" }],
+  });
+
+  const prev = await db.entry.findFirst({
+    where: {
+      OR: [
+        {
+          date: {
+            lt: date,
+          },
+        },
+        {
+          date: { lte: date },
+          id: { lt: post.id },
+        },
+      ],
+    },
+    orderBy: [{ date: "desc" }, { id: "desc" }],
   });
 
   if (!auth.read) {
@@ -57,6 +104,8 @@ export const getServerSideProps = async (
           },
         },
       }),
+      prev,
+      next,
     },
   };
 };
@@ -88,10 +137,54 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
 
   const editPost = api.posts.edit.useMutation();
 
+  console.log(props.prev, props.next);
   return (
     <JournalScopeLayout themeid={props.auth.themeid}>
       <FullPage>
-        <Title>{format(Zoneless.toDate(props.post.date), "EEEE MMMM d")}</Title>
+        <Header>
+          <Title>
+            {format(Zoneless.toDate(props.post.date), "EEEE MMMM d")}
+          </Title>
+          <Subtitle>
+            <div className="flex flex-row items-center justify-between">
+              <SafeLink
+                {...(props.prev === null
+                  ? { link: "disabled" }
+                  : {
+                      page: "editPost",
+                      postid: props.prev.id,
+                    })}
+              >
+                <div
+                  className={cl("whitespace-nowrap", {
+                    "text-gray-300": props.prev === null,
+                  })}
+                >
+                  <ChevronLeftIcon className="inline h-10" />
+                  Previous
+                </div>
+              </SafeLink>
+
+              <SafeLink
+                {...(props.next === null
+                  ? { link: "disabled" }
+                  : {
+                      page: "editPost",
+                      postid: props.next.id,
+                    })}
+              >
+                <div
+                  className={cl("whitespace-nowrap", {
+                    "text-gray-300": props.next === null,
+                  })}
+                >
+                  Next
+                  <ChevronRightIcon className="inline h-10" />
+                </div>
+              </SafeLink>
+            </div>
+          </Subtitle>
+        </Header>
         <MainSection>
           <StackedForm.Main
             onSubmit={() => {

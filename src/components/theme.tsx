@@ -2,17 +2,27 @@ import { FC, Fragment, PropsWithChildren } from "react";
 import { ifElse } from "~/lib/ifElse";
 import { Locator, SafeLink } from "~/lib/urls";
 
-export const Title: FC<PropsWithChildren> = (props) => {
+export const Header: FC<PropsWithChildren> = (props) => {
   return (
     <header>
       <div className="mx-auto mb-4 max-w-7xl px-4 sm:px-6 lg:px-8">
-        <h1 className="text-3xl font-bold leading-tight tracking-tight text-gray-900">
-          {props.children}
-        </h1>
+        {props.children}
       </div>
     </header>
   );
 };
+export const Title: FC<PropsWithChildren> = (props) => {
+  return (
+    <h1 className="text-3xl font-bold leading-tight tracking-tight text-gray-900">
+      {props.children}
+    </h1>
+  );
+};
+export const Subtitle : FC<PropsWithChildren> = props => {
+  return <div className="mx-0 sm:mx-4 lg:mx-10">
+    {props.children}
+  </div>
+}
 export const MainSection: FC<PropsWithChildren> = (props) => {
   return (
     <main>
@@ -84,12 +94,17 @@ export const StackedForm = {
       </div>
     );
   },
-  Checkbox(props: { inputKey: string; label: string, defaultChecked: boolean, onChange: (checked: boolean) => void }) {
+  Checkbox(props: {
+    inputKey: string;
+    label: string;
+    defaultChecked: boolean;
+    onChange: (checked: boolean) => void;
+  }) {
     return (
       <div className="form-control col-span-full">
         <label
           htmlFor={props.inputKey}
-          className="label cursor-pointer text-sm font-medium leading-6 text-gray-900 justify-start"
+          className="label cursor-pointer justify-start text-sm font-medium leading-6 text-gray-900"
         >
           <input
             type="checkbox"
@@ -97,7 +112,7 @@ export const StackedForm = {
             name={props.inputKey}
             id={props.inputKey}
             defaultChecked={props.defaultChecked}
-            onChange={e => {
+            onChange={(e) => {
               props.onChange(e.target.checked);
             }}
           />

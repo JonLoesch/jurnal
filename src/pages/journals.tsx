@@ -4,6 +4,7 @@ import { UnscopedLayout } from "~/components/Layout";
 import {
   Cards,
   FullPage,
+  Header,
   MainSection,
   StackedForm,
   Title,
@@ -40,7 +41,9 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
   return (
     <UnscopedLayout>
       <FullPage>
-        <Title>My Journals</Title>
+        <Header>
+          <Title>My Journals</Title>
+        </Header>
         <MainSection>
           <div className="grid-cell-90">
             {props.myJournals.map((j) => (

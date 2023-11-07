@@ -13,7 +13,7 @@ import { api } from "~/utils/api";
 import { useRouter } from "next/router";
 import PulseIcon from "~/images/heart-pulse-solid.svg";
 import Image from "next/image";
-import { FullPage, MainSection, Title } from "~/components/theme";
+import { FullPage, Header, MainSection, Title } from "~/components/theme";
 import { Zoneless } from "~/lib/ZonelessDate";
 import { z } from "zod";
 import { th } from "date-fns/locale";
@@ -42,9 +42,7 @@ export const getServerSideProps = async (
       auth,
       entries: (
         await db.entry.findMany({
-          orderBy: {
-            date: "desc",
-          },
+          orderBy: [{ date: "desc" }, { id: "desc" }],
           where: {
             themeId: auth.themeid,
           },
@@ -81,7 +79,9 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = ({
   return (
     <JournalScopeLayout themeid={auth.themeid}>
       <FullPage>
-        <Title>Timeline</Title>
+        <Header>
+          <Title>Timeline</Title>
+        </Header>
         <MainSection>
           <ul role="list" className="-mb-8">
             {entries.map((entry, index) => {
