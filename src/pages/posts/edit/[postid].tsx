@@ -5,7 +5,14 @@ import {
   InferGetServerSidePropsType,
   InferGetStaticPropsType,
 } from "next";
-import { FC, PropsWithChildren, useRef, useState } from "react";
+import {
+  FC,
+  PropsWithChildren,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { isDirty, z } from "zod";
 import { MetricAdjust, MetricBadge } from "~/components/MetricAdjust";
 import {
@@ -114,12 +121,16 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
   props,
 ) => {
   const [dirty, setDirty] = useState(false);
-  const [values, setValues] = useState(() =>
-    props.values.map(({ values, ...rest }) => ({
-      value: values[0]?.value ?? null,
-      ...rest,
-    })),
+  const v = useMemo(
+    () =>
+      props.values.map(({ values, ...rest }) => ({
+        value: values[0]?.value ?? null,
+        ...rest,
+      })),
+    [props.values],
   );
+  const [values, setValues] = useState(v);
+  useEffect(() => setValues(v), [v]);
   function setValue(key: string, value: number | null) {
     setValues((vs) => vs.map((v) => (v.key !== key ? v : { ...v, value })));
     setDirty(true);
@@ -137,7 +148,6 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
 
   const editPost = api.posts.edit.useMutation();
 
-  console.log(props.prev, props.next);
   return (
     <JournalScopeLayout themeid={props.auth.themeid}>
       <FullPage>
@@ -206,14 +216,16 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
               description="How did your day go?"
             >
               <StackedForm.SectionItem>
-                <WYSIWYG
-                  editorRef={editorRef}
-                  editable={props.auth.write}
-                  defaultValue={props.post.postQuill}
-                  onChange={() => {
-                    setDirty(true);
-                  }}
-                />
+                <div key={props.post.id}>
+                  <WYSIWYG
+                    editorRef={editorRef}
+                    editable={props.auth.write}
+                    defaultValue={props.post.postQuill}
+                    onChange={() => {
+                      setDirty(true);
+                    }}
+                  />
+                </div>
               </StackedForm.SectionItem>
               {props.auth.write &&
                 values.map((v) => (
