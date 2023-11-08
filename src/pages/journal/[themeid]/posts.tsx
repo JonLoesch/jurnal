@@ -25,7 +25,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (props)
   if (addPost.isSuccess) {
     const href = RelativeToRoot({
       page: "editPost",
-      postid: addPost.data,
+      postid: addPost.data.newPostId,
     });
     void router.push(href);
   }
@@ -51,7 +51,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (props)
                   ? "metric_recorded"
                   : "journal_entry";
               return (
-                <li key={getUnixTime(date)}>
+                <li key={entry.id}>
                   <SafeLink page="viewPost" postid={entry.id}>
                     <div className="relative pb-8">
                       {index !== props.entries.length - 1 ? (

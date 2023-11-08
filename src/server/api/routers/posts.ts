@@ -25,7 +25,9 @@ export const postsRouter = createTRPCRouter({
     z.object({ themeId: z.number(), date: Zoneless.zod }),
     (auth, input) =>
       auth.themeWithWritePermissions(input.themeId, async (model) => {
-        return (await model.newPost(input.date)).id;
+        return {
+          newPostId: (await model.newPost(input.date)).id,
+        };
       }),
   ),
 });

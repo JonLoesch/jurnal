@@ -10,6 +10,7 @@ import { z } from "zod";
 import { MetricModel } from "./MetricModel";
 import { protectedProcedure } from "~/server/api/trpc";
 import { EntryModel, EntryModelWithWritePermissions } from "./EntryModel";
+import { TRPCError } from "@trpc/server";
 
 type MaybeAuthError<T> =
   | {
@@ -108,7 +109,7 @@ export const Authorization = (
   }
 
   return {
-    theme<Props>(
+    theme<Props extends Record<string, unknown>>(
       themeid: number,
       getProps: (model: ThemeModel) => Promise<Props>,
     ) {
@@ -128,7 +129,7 @@ export const Authorization = (
         };
       });
     },
-    themeWithWritePermissions<Props>(
+    themeWithWritePermissions<Props extends Record<string, unknown>>(
       themeid: number,
       getProps: (model: ThemeModelWithWritePermissions) => Promise<Props>,
     ) {
@@ -151,7 +152,7 @@ export const Authorization = (
         };
       });
     },
-    post<Props>(
+    post<Props extends Record<string, unknown>>(
       postid: number,
       getProps: (model: EntryModel) => Promise<Props>,
     ) {
@@ -174,7 +175,7 @@ export const Authorization = (
         };
       });
     },
-    postWithWritePermissions<Props>(
+    postWithWritePermissions<Props extends Record<string, unknown>>(
       postid: number,
       getProps: (model: EntryModelWithWritePermissions) => Promise<Props>,
     ) {
@@ -201,7 +202,7 @@ export const Authorization = (
       });
     },
 
-    metric<Props>(
+    metric<Props extends Record<string, unknown>>(
       metrickey: string,
       getProps: (model: MetricModel) => Promise<Props>,
     ) {
@@ -289,6 +290,15 @@ export function trpcMutation<
     .input(validator.extend({})) // What?  Why does this matter?
     .mutation(async ({ ctx, input }) => {
       const result = await fn(Authorization(ctx.db, ctx.session), input);
+      if (result.error === 'authorization_error') {
+        throw new TRPCError({
+          code: 'FORBIDDEN',
+          message: 'Not authorized to access this data',
+        })
+      }
+      else {
+        return result.data;
+      }
     });
 }
 
