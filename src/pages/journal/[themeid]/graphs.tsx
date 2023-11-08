@@ -4,9 +4,8 @@ import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import { FC, PropsWithChildren } from "react";
 import { z } from "zod";
 import { JournalScopeLayout } from "~/components/Layout";
-import { authorize } from "~/lib/authorize";
-import { getMetricMetadata } from "~/lib/getMetricMetadata";
-import { SafeLink } from "~/lib/urls";
+import { SafeLink, fromUrl } from "~/lib/urls";
+import { withAuth } from "~/model/Authorization";
 import { getServerAuthSession } from "~/server/auth";
 import { db } from "~/server/db";
 
@@ -96,32 +95,15 @@ export const GraphLayout: FC<
   );
 };
 
-export const getServerSideProps = async (
-  context: GetServerSidePropsContext,
-) => {
-  const auth = await authorize.theme(db, getServerAuthSession(context), {
-    id: z
-      .string()
-      .regex(/^\d+$/)
-      .transform(Number)
-      .parse(context.query.themeid),
-  });
-  if (!auth.read) {
-    return authorize.redirectToLogin;
-  }
-  return {
-    props: {
-      auth,
-      metrics: await getMetricMetadata(auth.themeid),
-    },
-  };
-};
+export const getServerSideProps = withAuth(fromUrl.themeid, (auth, params) => auth.theme(params.themeid, async model => ({
+  metrics: await model.metrics(),
+})))
 
 export default function Page(
   props: InferGetServerSidePropsType<typeof getServerSideProps>,
 ) {
   return (
-    <JournalScopeLayout themeid={props.auth.themeid}>
+    <JournalScopeLayout themeid={props._auth.theme.id}>
       <GraphLayout metrics={props.metrics} />
     </JournalScopeLayout>
   );

@@ -5,59 +5,24 @@ import {
   InferGetServerSidePropsType,
 } from "next";
 import { CartesianGrid, Line, LineChart, Tooltip, XAxis, YAxis } from "recharts";
-
-import { z } from "zod";
-import { getMetricMetadata } from "~/lib/getMetricMetadata";
 import { GraphLayout } from "~/pages/journal/[themeid]/graphs";
-import { db } from "~/server/db";
 import { Zoneless } from "~/lib/ZonelessDate";
 import { JournalScopeLayout } from "~/components/Layout";
-import { authorize } from "~/lib/authorize";
-import { getServerAuthSession } from "~/server/auth";
+import { withAuth } from "~/model/Authorization";
+import { fromUrl } from "~/lib/urls";
 
-export const getServerSideProps = async (
-  context: GetServerSidePropsContext,
-) => {
-  const auth = await authorize.metric(db, getServerAuthSession(context), {
-    key: z
-      .string()
-      .parse(context.query.metric),
-  });
-  if (!auth.read) {
-    return authorize.redirectToLogin;
-  }
-  return {
-    props: {
-      auth,
-      values: (
-        await db.value.findMany({
-          where: {
-            metricKey: z.string().min(1).parse(context.query.metric),
-          },
-          include: {
-            entry: true,
-          },
-          orderBy: {
-            entry: {
-              date: "asc",
-            },
-          },
-        })
-      ).map(({ entry: { date, ...entry }, ...rest }) => ({
-        ...rest,
-        entry: { ...entry, date: Zoneless.fromDate(date) },
-      })),
-      metrics: await getMetricMetadata(auth.themeid),
-    },
-  };
-};
+
+export const getServerSideProps = withAuth(fromUrl.metrickey, (auth, params) => auth.metric(params.metrickey, async model => ({
+  values: await model.values(),
+  metrics: await model.theme.metrics(),
+})));
 
 // const data = [{name: 'Page A', uv: 400, pv: 2400, amt: 2400}, ];
 export default function Page(
   props: InferGetServerSidePropsType<typeof getServerSideProps>,
 ) {
   return (
-    <JournalScopeLayout themeid={props.auth.themeid}>
+    <JournalScopeLayout themeid={props._auth.theme.id}>
       <GraphLayout metrics={props.metrics} hideOnSmall>
         <LineChart
           width={400}

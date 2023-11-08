@@ -2,8 +2,7 @@ import { CheckIcon, CursorArrowRaysIcon } from "@heroicons/react/24/outline";
 import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
 import { DeltaStatic } from "quill";
 import { FC, useRef, useState } from "react";
-import ReactQuill, { UnprivilegedEditor } from "react-quill";
-import { z } from "zod";
+import { UnprivilegedEditor } from "react-quill";
 import { JournalScopeLayout } from "~/components/Layout";
 import { getQuillData } from "~/lib/getQuillData";
 import { WYSIWYG } from "~/components/dynamic";
@@ -14,41 +13,23 @@ import {
   StackedForm,
   Title,
 } from "~/components/theme";
-import { authorize } from "~/lib/authorize";
-import { getServerAuthSession } from "~/server/auth";
-import { db } from "~/server/db";
 import { api } from "~/utils/api";
 import { Toast, useToastMessage } from "~/lib/useToastMessage";
+import { withAuth } from "~/model/Authorization";
+import { fromUrl } from "~/lib/urls";
 
-export const getServerSideProps = async (
-  context: GetServerSidePropsContext,
-) => {
-  const auth = await authorize.theme(db, getServerAuthSession(context), {
-    id: z
-      .string()
-      .regex(/^\d+$/)
-      .transform(Number)
-      .parse(context.query.themeid),
-  });
-  if (!auth.read) {
-    return authorize.redirectToLogin;
-  }
-  return {
-    props: {
-      theme: await db.theme.findUniqueOrThrow({
-        where: { id: auth.themeid },
-        include: {
-          themeSubscription: {
-            where: {
-              userId: auth.userId,
-            },
+export const getServerSideProps = withAuth(fromUrl.themeid,
+  (auth, params) =>
+    auth.theme(params.themeid, async (model) => ({
+      theme: await model.obj({
+        themeSubscription: {
+          where: {
+            userId: auth.session?.user.id ?? "no_one",
           },
         },
       }),
-      auth,
-    },
-  };
-};
+    })),
+);
 
 const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
   props,
@@ -61,7 +42,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
   const toast = useToastMessage();
 
   return (
-    <JournalScopeLayout themeid={props.auth.themeid}>
+    <JournalScopeLayout themeid={props._auth.theme.id}>
       <FullPage>
         <Header>
           <Title>{props.theme.name}</Title>
@@ -86,7 +67,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
               <StackedForm.SectionItem>
                 <WYSIWYG
                   editorRef={editorRef}
-                  editable={props.auth.write}
+                  editable={props._auth.theme.write}
                   defaultValue={props.theme.quill}
                   onChange={() => {
                     setDirty(true);

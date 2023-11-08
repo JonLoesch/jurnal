@@ -1,9 +1,6 @@
 import { format } from "date-fns";
-import { produce } from "immer";
 import {
-  GetServerSidePropsContext,
   InferGetServerSidePropsType,
-  InferGetStaticPropsType,
 } from "next";
 import {
   FC,
@@ -13,7 +10,6 @@ import {
   useRef,
   useState,
 } from "react";
-import { isDirty, z } from "zod";
 import { MetricAdjust, MetricBadge } from "~/components/MetricAdjust";
 import {
   FullPage,
@@ -23,7 +19,6 @@ import {
   Subtitle,
   Title,
 } from "~/components/theme";
-import { db } from "~/server/db";
 import { api } from "~/utils/api";
 import {
   CheckIcon,
@@ -33,89 +28,28 @@ import {
 } from "@heroicons/react/24/outline";
 import { type DeltaStatic } from "quill";
 import { Zoneless } from "~/lib/ZonelessDate";
-import { authorize } from "~/lib/authorize";
-import { getServerAuthSession } from "~/server/auth";
 import { JournalScopeLayout } from "~/components/Layout";
 import { WYSIWYG } from "~/components/dynamic";
 import ReactQuill, { UnprivilegedEditor } from "react-quill";
 import { getQuillData } from "~/lib/getQuillData";
-import { OptionalLocator, SafeLink } from "~/lib/urls";
+import { SafeLink, fromUrl } from "~/lib/urls";
 import { cl } from "~/lib/cl";
+import { withAuth } from "~/model/Authorization";
 
-export const getServerSideProps = async (
-  context: GetServerSidePropsContext,
-) => {
-  const postId = z
-    .string()
-    .regex(/^\d+$/)
-    .transform(Number)
-    .parse(context.query.postid);
-  const auth = await authorize.post(db, getServerAuthSession(context), {
-    id: postId,
-  });
-  const { date, ...post } = await db.entry.findUniqueOrThrow({
-    where: {
-      id: postId,
-    },
-  });
-  const next = await db.entry.findFirst({
-    where: {
-      OR: [
-        {
-          date: {
-            gt: date,
-          },
-        },
-        {
-          date: { gte: date },
-          id: { gt: post.id },
-        },
-      ],
-    },
-    orderBy: [{ date: "asc" }, { id: "asc" }],
-  });
-
-  const prev = await db.entry.findFirst({
-    where: {
-      OR: [
-        {
-          date: {
-            lt: date,
-          },
-        },
-        {
-          date: { lte: date },
-          id: { lt: post.id },
-        },
-      ],
-    },
-    orderBy: [{ date: "desc" }, { id: "desc" }],
-  });
-
-  if (!auth.read) {
-    return authorize.redirectToLogin;
-  }
-  return {
-    props: {
-      auth,
-      post: { ...post, date: Zoneless.fromDate(date) },
-      values: await db.metric.findMany({
-        orderBy: {
-          sortOrder: "asc",
-        },
-        include: {
-          values: {
-            where: {
-              entryId: postId,
-            },
-          },
-        },
-      }),
-      prev,
+export const getServerSideProps = withAuth(fromUrl.postid, (auth, params) =>
+  auth.post(params.postid, async (model) => {
+    const post = await model.obj({});
+    const date = post.date;
+    const next = await model.next(post);
+    const prev = await model.prev(post);
+    return {
+      post: {...post, date: Zoneless.fromDate(date)},
       next,
-    },
-  };
-};
+      prev,
+      values: await model.values(),
+    };
+  }),
+);
 
 const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
   props,
@@ -149,7 +83,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
   const editPost = api.posts.edit.useMutation();
 
   return (
-    <JournalScopeLayout themeid={props.auth.themeid}>
+    <JournalScopeLayout themeid={props._auth.theme.id}>
       <FullPage>
         <Header>
           <Title>
@@ -219,7 +153,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
                 <div key={props.post.id}>
                   <WYSIWYG
                     editorRef={editorRef}
-                    editable={props.auth.write}
+                    editable={props._auth.theme.write}
                     defaultValue={props.post.postQuill}
                     onChange={() => {
                       setDirty(true);
@@ -227,7 +161,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
                   />
                 </div>
               </StackedForm.SectionItem>
-              {props.auth.write &&
+              {props._auth.theme.write &&
                 values.map((v) => (
                   <StackedForm.SectionItem key={v.key}>
                     <MetricAdjust
@@ -238,7 +172,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
                     />
                   </StackedForm.SectionItem>
                 ))}
-              {!props.auth.write && (
+              {!props._auth.theme.write && (
                 <StackedForm.SectionItem>
                   {values.map((v) =>
                     v.value === null ? null : (

@@ -1,64 +1,24 @@
 import { BookOpenIcon } from "@heroicons/react/24/solid";
 import { format, formatISO, getUnixTime } from "date-fns";
 import {
-  GetServerSideProps,
-  GetServerSidePropsContext,
   InferGetServerSidePropsType,
-  PreviewData,
 } from "next";
-import { useSession } from "next-auth/react";
 import { FC } from "react";
-import { db } from "~/server/db";
 import { api } from "~/utils/api";
 import { useRouter } from "next/router";
 import PulseIcon from "~/images/heart-pulse-solid.svg";
 import Image from "next/image";
 import { FullPage, Header, MainSection, Title } from "~/components/theme";
 import { Zoneless } from "~/lib/ZonelessDate";
-import { z } from "zod";
-import { th } from "date-fns/locale";
-import { getServerSession } from "next-auth";
-import { getServerAuthSession } from "~/server/auth";
-import { ParsedUrlQuery } from "querystring";
-import { authorize } from "~/lib/authorize";
 import { JournalScopeLayout } from "~/components/Layout";
-import { RelativeToRoot, SafeLink } from "~/lib/urls";
+import { RelativeToRoot, SafeLink, fromUrl } from "~/lib/urls";
+import { withAuth } from "~/model/Authorization";
 
-export const getServerSideProps = async (
-  context: GetServerSidePropsContext,
-) => {
-  const auth = await authorize.theme(db, getServerAuthSession(context), {
-    id: z
-      .string()
-      .regex(/^\d+$/)
-      .transform(Number)
-      .parse(context.query.themeid),
-  });
-  if (!auth.read) {
-    return authorize.redirectToLogin;
-  }
-  return {
-    props: {
-      auth,
-      entries: (
-        await db.entry.findMany({
-          orderBy: [{ date: "desc" }, { id: "desc" }],
-          where: {
-            themeId: auth.themeid,
-          },
-        })
-      ).map(({ date, ...rest }) => ({
-        ...rest,
-        date: Zoneless.fromDate(date),
-      })),
-    },
-  };
-};
+export const getServerSideProps = withAuth(fromUrl.themeid, (auth, params) => auth.theme(params.themeid, async model => ({
+  entries: await model.entries(),
+})));
 
-const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = ({
-  entries,
-  auth,
-}) => {
+const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (props) => {
   const addPost = api.posts.create.useMutation();
   const router = useRouter();
 
@@ -77,14 +37,14 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = ({
   //   </span>
   // );
   return (
-    <JournalScopeLayout themeid={auth.themeid}>
+    <JournalScopeLayout themeid={props._auth.theme.id}>
       <FullPage>
         <Header>
           <Title>Timeline</Title>
         </Header>
         <MainSection>
           <ul role="list" className="-mb-8">
-            {entries.map((entry, index) => {
+            {props.entries.map((entry, index) => {
               const date = Zoneless.toDate(entry.date);
               const entryType =
                 entry.postQuill === null || entry.postQuill === undefined
@@ -94,7 +54,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = ({
                 <li key={getUnixTime(date)}>
                   <SafeLink page="viewPost" postid={entry.id}>
                     <div className="relative pb-8">
-                      {index !== entries.length - 1 ? (
+                      {index !== props.entries.length - 1 ? (
                         <span
                           className="absolute left-4 top-4 -ml-px h-full w-0.5 bg-gray-200"
                           aria-hidden="true"
@@ -150,13 +110,13 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = ({
             })}
           </ul>
 
-          {auth.write && (
+          {props._auth.theme.write && (
             <div className="mt-16 flex justify-end">
               <button
                 className="btn btn-primary"
                 onClick={() => {
                   addPost.mutate({
-                    themeId: auth.themeid,
+                    themeId: props._auth.theme.id,
                     date: Zoneless.fromDate(new Date()),
                   });
                 }}

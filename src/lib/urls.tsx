@@ -3,6 +3,7 @@ import { PropsWithChildren, ReactNode } from "react";
 import { env } from "~/env.mjs";
 import { Link as UnderlyingEmailLink } from "@react-email/link";
 import { usePathname } from "next/navigation";
+import { z } from "zod";
 
 export type Locator =
   | {
@@ -64,6 +65,47 @@ export function RelativeToRoot(locator: Locator): string {
       return `/graphs/${locator.metrickey}`;
   }
 }
+
+const coerceNumber = z.string().regex(/^\d+$/).transform(Number);
+export const fromUrl = {
+  noparams: z.object({}),
+  themeid: z.object({
+    themeid: coerceNumber,
+  }),
+  postid: z.object({
+    postid: coerceNumber,
+  }),
+  metrickey: z.object({
+    metrickey: z.string().min(1)
+  })
+
+}
+
+// type Params<Page extends Locator["page"]> = Omit<
+//   Locator & { page: Page },
+//   "page"
+// >;
+// type ZodParams<Params extends Record<string, unknown>> = {
+//   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+//   [K in keyof Params]: z.ZodType<Params[K], any, string>;
+// };
+// function buildZodValidators(): {
+//   [Page in Locator["page"]]: z.ZodObject<ZodParams<Params<Page>>>;
+// } {
+//   return {
+//     index: fromUrl.noparams,
+//     editJournal: fromUrl.themeid,
+//     editPost: fromUrl.postid,
+//     myJournals: fromUrl.noparams,
+//     viewJournal: fromUrl.themeid,
+//     viewMetrics: fromUrl.themeid,
+//     viewPost: fromUrl.postid,
+//     viewSpecificMetric: fromUrl.metrickey,
+//     viewTimeline: fromUrl.themeid,
+//   };
+// }
+// export const zodParams = buildZodValidators();
+
 function FullyQualified(locator: Locator): string {
   // slightly lazy here to reuse the NEXTAUTH env var :(
   return `${env.NEXTAUTH_URL}${RelativeToRoot(locator)}`;
