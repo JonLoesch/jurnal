@@ -17,18 +17,18 @@ import { api } from "~/utils/api";
 import { Toast, useToastMessage } from "~/lib/useToastMessage";
 import { withAuth } from "~/model/Authorization";
 import { fromUrl } from "~/lib/urls";
+import { MetricGroupEditor } from "~/components/MetricGroupEditor";
 
-export const getServerSideProps = withAuth(fromUrl.themeid,
-  (auth, params) =>
-    auth.theme(params.themeid, async (model) => ({
-      theme: await model.obj({
-        themeSubscription: {
-          where: {
-            userId: auth.session?.user.id ?? "no_one",
-          },
+export const getServerSideProps = withAuth(fromUrl.themeid, (auth, params) =>
+  auth.theme(params.themeid, async (model) => ({
+    theme: await model.obj({
+      themeSubscription: {
+        where: {
+          userId: auth.session?.user.id ?? "no_one",
         },
-      }),
-    })),
+      },
+    }),
+  })),
 );
 
 const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
@@ -82,6 +82,11 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
                   {editJournal.isSuccess && <CheckIcon className="w-8" />}
                 </StackedForm.SubmitButton>
               </StackedForm.ButtonPanel>
+            </StackedForm.Section>
+            <StackedForm.Section title="Template">
+              <StackedForm.SectionItem>
+                <MetricGroupEditor />
+              </StackedForm.SectionItem>
             </StackedForm.Section>
             <StackedForm.Section title="Notifications">
               <StackedForm.Checkbox
