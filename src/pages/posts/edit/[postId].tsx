@@ -65,8 +65,8 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
   );
   const [values, setValues] = useState(v);
   useEffect(() => setValues(v), [v]);
-  function setValue(key: string, value: number | null) {
-    setValues((vs) => vs.map((v) => (v.key !== key ? v : { ...v, value })));
+  function setValue(id: string, value: number | null) {
+    setValues((vs) => vs.map((v) => (v.id !== id ? v : { ...v, value })));
     setDirty(true);
   }
   const editorRef = useRef<UnprivilegedEditor>(null);
@@ -76,14 +76,14 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
       firstLine: string | null;
     }
   >(() => () => ({
-    full: props.post.postQuill,
-    firstLine: props.post.postText,
+    full: props.post.quillData,
+    firstLine: props.post.text,
   }));
 
   const editPost = api.posts.edit.useMutation();
 
   return (
-    <JournalScopeLayout themeid={props._auth.theme.id}>
+    <JournalScopeLayout journalId={props._auth.journal.id}>
       <FullPage>
         <Header>
           <Title>
@@ -96,7 +96,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
                   ? { link: "disabled" }
                   : {
                       page: "editPost",
-                      postid: props.prev.id,
+                      postId: props.prev.id,
                     })}
               >
                 <div
@@ -114,7 +114,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
                   ? { link: "disabled" }
                   : {
                       page: "editPost",
-                      postid: props.next.id,
+                      postId: props.next.id,
                     })}
               >
                 <div
@@ -139,7 +139,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
                   postJson: postJson.full,
                   firstLine: postJson.firstLine,
                   values: Object.fromEntries(
-                    values.map((v) => [v.key, v.value]),
+                    values.map((v) => [v.id, v.value]),
                   ),
                 })
                 .then(() => setDirty(false));
@@ -153,32 +153,32 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
                 <div key={props.post.id}>
                   <WYSIWYG
                     editorRef={editorRef}
-                    editable={props._auth.theme.write}
-                    defaultValue={props.post.postQuill}
+                    editable={props._auth.journal.write}
+                    defaultValue={props.post.quillData}
                     onChange={() => {
                       setDirty(true);
                     }}
                   />
                 </div>
               </StackedForm.SectionItem>
-              {props._auth.theme.write &&
+              {props._auth.journal.write &&
                 values.map((v) => (
-                  <StackedForm.SectionItem key={v.key}>
+                  <StackedForm.SectionItem key={v.id}>
                     <MetricAdjust
-                      metricKey={v.key}
+                      metricId={v.id}
                       name={v.name}
                       value={v.value}
-                      onChange={(newValue) => setValue(v.key, newValue)}
+                      onChange={(newValue) => setValue(v.id, newValue)}
                     />
                   </StackedForm.SectionItem>
                 ))}
-              {!props._auth.theme.write && (
+              {!props._auth.journal.write && (
                 <StackedForm.SectionItem>
                   {values.map((v) =>
                     v.value === null ? null : (
                       <MetricBadge
-                        key={v.key}
-                        metricKey={v.key}
+                        key={v.id}
+                        metricKey={v.id}
                         name={v.name}
                         value={v.value}
                         // onChange={(newValue) => setValue(v.key, newValue)}

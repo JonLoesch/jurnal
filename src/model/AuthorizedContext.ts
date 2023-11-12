@@ -7,7 +7,7 @@ type GlobalContext = {
 };
 
 type OptionalContext = {
-  theme: Roles<{ id: number }>;
+  journal: Roles<{ id: number }>;
 };
 
 export type AuthorizedContext<Key extends keyof OptionalContext> =

@@ -17,15 +17,15 @@ export const journalsRouter = createTRPCRouter({
     description: z.string().or(z.null()),
     quill: z.custom<DeltaStatic>().or(z.null()),
     themeId: z.number(),
-  }), (auth, input) => auth.themeWithWritePermissions(input.themeId, async model => {
-    await model.editTheme(input.description, input.quill);
+  }), (auth, input) => auth.journalWithWritePermissions(input.themeId, async model => {
+    await model.editJournal(input.description, input.quill);
     return {success: true};
   })),
   
   subscribe: trpcMutation(z.object({
     subscribe: z.boolean(),
     themeId: z.number(),
-  }), (auth, input) => auth.theme(input.themeId, async model => {
+  }), (auth, input) => auth.journal(input.themeId, async model => {
     await model.subscribe(input.subscribe)
     return {success: true};
   })),

@@ -14,8 +14,8 @@ import { JournalScopeLayout } from "~/components/Layout";
 import { RelativeToRoot, SafeLink, fromUrl } from "~/lib/urls";
 import { withAuth } from "~/model/Authorization";
 
-export const getServerSideProps = withAuth(fromUrl.themeid, (auth, params) => auth.theme(params.themeid, async model => ({
-  entries: await model.entries(),
+export const getServerSideProps = withAuth(fromUrl.themeid, (auth, params) => auth.journal(params.themeid, async model => ({
+  posts: await model.posts(),
 })));
 
 const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (props) => {
@@ -25,7 +25,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (props)
   if (addPost.isSuccess) {
     const href = RelativeToRoot({
       page: "editPost",
-      postid: addPost.data.newPostId,
+      postId: addPost.data.newPostId,
     });
     void router.push(href);
   }
@@ -37,24 +37,24 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (props)
   //   </span>
   // );
   return (
-    <JournalScopeLayout themeid={props._auth.theme.id}>
+    <JournalScopeLayout journalId={props._auth.journal.id}>
       <FullPage>
         <Header>
           <Title>Timeline</Title>
         </Header>
         <MainSection>
           <ul role="list" className="-mb-8">
-            {props.entries.map((entry, index) => {
-              const date = Zoneless.toDate(entry.date);
+            {props.posts.map((post, index) => {
+              const date = Zoneless.toDate(post.date);
               const entryType =
-                entry.postQuill === null || entry.postQuill === undefined
+                post.quillData === null || post.quillData === undefined
                   ? "metric_recorded"
                   : "journal_entry";
               return (
-                <li key={entry.id}>
-                  <SafeLink page="viewPost" postid={entry.id}>
+                <li key={post.id}>
+                  <SafeLink page="viewPost" postId={post.id}>
                     <div className="relative pb-8">
-                      {index !== props.entries.length - 1 ? (
+                      {index !== props.posts.length - 1 ? (
                         <span
                           className="absolute left-4 top-4 -ml-px h-full w-0.5 bg-gray-200"
                           aria-hidden="true"
@@ -88,7 +88,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (props)
                             )}
                             {entryType === "journal_entry" && (
                               <p className="max-h-[3.75rem] overflow-hidden">
-                                {entry.postText}
+                                {post.text}
                               </p>
                             )}
                           </div>
@@ -110,13 +110,13 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (props)
             })}
           </ul>
 
-          {props._auth.theme.write && (
+          {props._auth.journal.write && (
             <div className="mt-16 flex justify-end">
               <button
                 className="btn btn-primary"
                 onClick={() => {
                   addPost.mutate({
-                    themeId: props._auth.theme.id,
+                    themeId: props._auth.journal.id,
                     date: Zoneless.fromDate(new Date()),
                   });
                 }}

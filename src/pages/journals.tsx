@@ -19,12 +19,12 @@ export const getServerSideProps = async (
   const session = await getServerAuthSession(context);
   return {
     props: {
-      myJournals: await db.theme.findMany({
+      myJournals: await db.journal.findMany({
         where: { owner: session?.user },
       }),
-      followedJournals: await db.theme.findMany({
+      followedJournals: await db.journal.findMany({
         where: {
-          themeSubscription: {
+          subscriptions: {
             some: {
               user: session?.user,
             },
@@ -52,7 +52,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
                 actions={[
                   {
                     page: "viewJournal",
-                    themeid: j.id,
+                    journalId: j.id,
                     title: "View Journal",
                   },
                 ]}

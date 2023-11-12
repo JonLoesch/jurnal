@@ -31,48 +31,51 @@ model Example {
     @@index([name])
 }
 
-model Entry {
-    id                Int                 @id @default(autoincrement())
-    postText          String?
+model Post {
+    id           Int                @id @default(autoincrement())
+    text         String?            @map("postText")
     /// [QuillData]
-    postQuill         Json?
-    date              DateTime            @db.Date
-    values            Value[]
-    theme             Theme               @relation(fields: [themeId], references: [id])
-    themeId           Int
-    entrySubscription EntrySubscription[]
+    quillData    Json?              @map("postQuill")
+    date         DateTime           @db.Date
+    values       Value[]
+    journal      Journal            @relation(fields: [journalId], references: [id])
+    journalId    Int                @map("themeId")
+    subscriptions PostSubscription[]
+
+    @@map("Entry")
 }
 
-model EntrySubscription {
-    entry   Entry  @relation(fields: [entryId], references: [id])
-    user    User   @relation(fields: [userId], references: [id])
-    entryId Int    @map("entry_id")
-    userId  String @map("user_id")
+model PostSubscription {
+    post   Post   @relation(fields: [postId], references: [id])
+    user   User   @relation(fields: [userId], references: [id])
+    postId Int    @map("entry_id")
+    userId String @map("user_id")
 
-    @@id([entryId, userId])
+    @@id([postId, userId])
+    @@map("EntrySubscription")
 }
 
 model Value {
-    entry     Entry  @relation(fields: [entryId], references: [id])
-    entryId   Int
-    metric    Metric @relation(fields: [metricKey], references: [key])
-    metricKey String
-    value     Float
+    entry    Post   @relation(fields: [entryId], references: [id])
+    entryId  Int
+    metric   Metric @relation(fields: [metricId], references: [id])
+    metricId String @map("metricKey")
+    value    Float
 
-    @@id([entryId, metricKey])
+    @@id([entryId, metricId])
 }
 
 model Metric {
-    key       String  @id
+    id        String  @id @map("key")
     name      String
     values    Value[]
     type      String
     sortOrder Int
-    theme     Theme   @relation(fields: [themeId], references: [id])
-    themeId   Int
+    journal     Journal @relation(fields: [journalId], references: [id])
+    journalId   Int @map("themeId")
 }
 
-model Theme {
+model Journal {
     id                Int                 @id @default(autoincrement())
     name              String
     description       String
@@ -81,24 +84,26 @@ model Theme {
     owner             User                @relation(fields: [ownerId], references: [id])
     ownerId           String
     isPublic          Boolean
-    reader            Reader[]
-    entry             Entry[]
-    metric            Metric[]
-    themeSubscription ThemeSubscription[]
+    readers           Reader[]
+    posts             Post[]
+    metrics           Metric[]
+    subscriptions ThemeSubscription[]
+
+    @@map("Theme")
 }
 
 model ThemeSubscription {
-    theme   Theme  @relation(fields: [themeId], references: [id])
-    user    User   @relation(fields: [userId], references: [id])
-    themeId Int    @map("theme_id")
-    userId  String @map("user_id")
+    journal   Journal @relation(fields: [journalId], references: [id])
+    user    User    @relation(fields: [userId], references: [id])
+    journalId Int     @map("theme_id")
+    userId  String  @map("user_id")
 
-    @@id([themeId, userId])
+    @@id([journalId, userId])
 }
 
 model Reader {
-    id      Int    @id @default(autoincrement())
-    theme   Theme  @relation(fields: [themeId], references: [id])
+    id      Int     @id @default(autoincrement())
+    theme   Journal @relation(fields: [themeId], references: [id])
     themeId Int
     email   String
 }
@@ -139,8 +144,8 @@ model User {
     role              String?
     accounts          Account[]
     sessions          Session[]
-    Theme             Theme[]
-    entrySubscription EntrySubscription[]
+    Theme             Journal[]
+    entrySubscription PostSubscription[]
     themeSubscription ThemeSubscription[]
 }
 

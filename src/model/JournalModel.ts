@@ -5,12 +5,12 @@ import { Zoneless, ZonelessDate } from "~/lib/ZonelessDate";
 import { DeltaStatic } from "quill";
 import { AuthorizationError } from "./AuthorizationError";
 
-export class ThemeModel {
-  constructor(protected readonly context: AuthorizedContext<"theme">) {}
+export class JournalModel {
+  constructor(protected readonly context: AuthorizedContext<"journal">) {}
 
-  obj<Include extends Prisma.ThemeInclude>(include: Include) {
-    return this.context.prisma.theme.findUniqueOrThrow({
-      where: { id: this.context.theme.id },
+  obj<Include extends Prisma.JournalInclude>(include: Include) {
+    return this.context.prisma.journal.findUniqueOrThrow({
+      where: { id: this.context.journal.id },
       include,
     });
   }
@@ -19,7 +19,7 @@ export class ThemeModel {
     return db.metric
       .findMany({
         where: {
-          themeId: this.context.theme.id,
+          themeId: this.context.journal.id,
         },
         include: {
           values: {
@@ -43,12 +43,12 @@ export class ThemeModel {
       );
   }
 
-  entries() {
-    return db.entry
+  posts() {
+    return db.post
       .findMany({
         orderBy: [{ date: "desc" }, { id: "desc" }],
         where: {
-          themeId: this.context.theme.id,
+          journalId: this.context.journal.id,
         },
       })
       .then((result) =>
@@ -65,7 +65,7 @@ export class ThemeModel {
       throw new AuthorizationError();
     }
     const subscription = {
-      themeId: this.context.theme.id,
+      themeId: this.context.journal.id,
       userId,
     };
 
@@ -88,10 +88,10 @@ export class ThemeModel {
 
 }
 
-export class ThemeModelWithWritePermissions extends ThemeModel {
-  async editTheme(description: string | null, quill: DeltaStatic | null) {
-    await this.context.prisma.theme.update({
-      where: { id: this.context.theme.id },
+export class ThemeModelWithWritePermissions extends JournalModel {
+  async editJournal(description: string | null, quill: DeltaStatic | null) {
+    await this.context.prisma.journal.update({
+      where: { id: this.context.journal.id },
       data: {
         quill: quill ?? undefined,
         description: description ?? undefined,
@@ -100,9 +100,9 @@ export class ThemeModelWithWritePermissions extends ThemeModel {
   }
 
   async newPost(date: ZonelessDate) {
-    return this.context.prisma.entry.create({
+    return this.context.prisma.post.create({
       data: {
-        themeId: this.context.theme.id,
+        journalId: this.context.journal.id,
         date: Zoneless.toDate(date),
       },
     })

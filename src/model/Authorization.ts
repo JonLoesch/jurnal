@@ -1,7 +1,7 @@
 import { Session } from "next-auth";
 import { AuthorizationError } from "./AuthorizationError";
 import { Prisma, PrismaClient } from "@prisma/client";
-import { ThemeModel, ThemeModelWithWritePermissions } from "./ThemeModel";
+import { JournalModel, ThemeModelWithWritePermissions } from "./JournalModel";
 import { AuthorizedContext } from "./AuthorizedContext";
 import { GetServerSideProps } from "next";
 import { getServerAuthSession } from "~/server/auth";
@@ -9,7 +9,7 @@ import { db } from "~/server/db";
 import { z } from "zod";
 import { MetricModel } from "./MetricModel";
 import { protectedProcedure } from "~/server/api/trpc";
-import { EntryModel, EntryModelWithWritePermissions } from "./EntryModel";
+import { PostModel, EntryModelWithWritePermissions } from "./PostModel";
 import { TRPCError } from "@trpc/server";
 
 type MaybeAuthError<T> =
@@ -37,27 +37,27 @@ async function wrapResult<T>(fn: () => Promise<T>): Promise<MaybeAuthError<T>> {
   }
 }
 
-function checkThemeAccess(
+function checkJournalAccess(
   session: Session | null,
   theme:
-    | Prisma.ThemeGetPayload<{
+    | Prisma.JournalGetPayload<{
         select: {
           isPublic: true;
           id: true;
-          reader: true;
+          readers: true;
           owner: true;
         };
       }>
     | null
     | undefined,
-): AuthorizedContext<"theme">["theme"] {
+): AuthorizedContext<"journal">["journal"] {
   if (theme == null) {
     throw new AuthorizationError();
   }
   const write = theme.owner.email === session?.user.email;
   const read =
     write ||
-    theme.reader.some((r) => r.email === session?.user.email) ||
+    theme.readers.some((r) => r.email === session?.user.email) ||
     theme.isPublic;
 
   if (!read) {
@@ -76,77 +76,77 @@ export const Authorization = (
   prisma: PrismaClient,
   session: Session | null,
 ) => {
-  async function fromThemeId(themeid: number) {
-    return checkThemeAccess(
+  async function fromJournalId(journalId: number) {
+    return checkJournalAccess(
       session,
-      await prisma.theme.findUnique({
-        where: { id: themeid },
+      await prisma.journal.findUnique({
+        where: { id: journalId },
         include: {
-          reader: true,
+          readers: true,
           owner: true,
         },
       }),
     );
   }
 
-  async function fromPostId(postid: number) {
-    return checkThemeAccess(
+  async function fromPostId(postId: number) {
+    return checkJournalAccess(
       session,
       (
-        await db.entry.findUnique({
-          where: { id: postid },
+        await db.post.findUnique({
+          where: { id: postId },
           include: {
-            theme: {
+            journal: {
               include: {
-                reader: true,
+                readers: true,
                 owner: true,
               },
             },
           },
         })
-      )?.theme,
+      )?.journal,
     );
   }
 
   return {
-    theme<Props extends Record<string, unknown>>(
+    journal<Props extends Record<string, unknown>>(
       themeid: number,
-      getProps: (model: ThemeModel) => Promise<Props>,
+      getProps: (model: JournalModel) => Promise<Props>,
     ) {
       return wrapResult(async () => {
-        const theme = await fromThemeId(themeid);
+        const journal = await fromJournalId(themeid);
         return {
           _auth: {
-            theme,
+            journal,
           },
           ...(await getProps(
-            new ThemeModel({
+            new JournalModel({
               prisma,
               session,
-              theme,
+              journal,
             }),
           )),
         };
       });
     },
-    themeWithWritePermissions<Props extends Record<string, unknown>>(
+    journalWithWritePermissions<Props extends Record<string, unknown>>(
       themeid: number,
       getProps: (model: ThemeModelWithWritePermissions) => Promise<Props>,
     ) {
       return wrapResult(async () => {
-        const theme = await fromThemeId(themeid);
-        if (!theme.write) {
+        const journal = await fromJournalId(themeid);
+        if (!journal.write) {
           throw new AuthorizationError();
         }
         return {
           _auth: {
-            theme,
+            journal,
           },
           ...(await getProps(
             new ThemeModelWithWritePermissions({
               prisma,
               session,
-              theme,
+              journal,
             }),
           )),
         };
@@ -154,20 +154,20 @@ export const Authorization = (
     },
     post<Props extends Record<string, unknown>>(
       postid: number,
-      getProps: (model: EntryModel) => Promise<Props>,
+      getProps: (model: PostModel) => Promise<Props>,
     ) {
       return wrapResult(async () => {
-        const theme = await fromPostId(postid);
+        const journal = await fromPostId(postid);
         return {
           _auth: {
-            theme,
+            journal,
           },
           ...(await getProps(
-            new EntryModel(
+            new PostModel(
               {
                 prisma,
                 session,
-                theme,
+                journal,
               },
               postid,
             ),
@@ -180,20 +180,20 @@ export const Authorization = (
       getProps: (model: EntryModelWithWritePermissions) => Promise<Props>,
     ) {
       return wrapResult(async () => {
-        const theme = await fromPostId(postid);
-        if (!theme.write) {
+        const journal = await fromPostId(postid);
+        if (!journal.write) {
           throw new AuthorizationError();
         }
         return {
           _auth: {
-            theme,
+            journal,
           },
           ...(await getProps(
             new EntryModelWithWritePermissions(
               {
                 prisma,
                 session,
-                theme,
+                journal,
               },
               postid,
             ),
@@ -203,40 +203,40 @@ export const Authorization = (
     },
 
     metric<Props extends Record<string, unknown>>(
-      metrickey: string,
+      metricId: string,
       getProps: (model: MetricModel) => Promise<Props>,
     ) {
       return wrapResult(async () => {
-        const theme = checkThemeAccess(
+        const journal = checkJournalAccess(
           session,
           (
             await db.metric.findUnique({
-              where: { key: metrickey },
+              where: { id: metricId },
               include: {
-                theme: {
+                journal: {
                   select: {
                     id: true,
                     isPublic: true,
-                    reader: true,
+                    readers: true,
                     owner: true,
                   },
                 },
               },
             })
-          )?.theme,
+          )?.journal
         );
         return {
           _auth: {
-            theme,
+            journal,
           },
           ...(await getProps(
             new MetricModel(
               {
                 prisma,
                 session,
-                theme,
+                journal,
               },
-              metrickey,
+              metricId,
             ),
           )),
         };

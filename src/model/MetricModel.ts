@@ -1,22 +1,22 @@
 import { Zoneless } from "~/lib/ZonelessDate";
 import { AuthorizedContext } from "./AuthorizedContext";
-import { ThemeModel } from "./ThemeModel";
+import { JournalModel } from "./JournalModel";
 
 export class MetricModel {
   constructor(
-    private readonly context: AuthorizedContext<"theme">,
-    private readonly metrickey: string,
+    private readonly context: AuthorizedContext<"journal">,
+    private readonly merticId: string,
   ) {}
 
-  get theme() {
-    return new ThemeModel(this.context);
+  get journal() {
+    return new JournalModel(this.context);
   }
 
   values() {
     return this.context.prisma.value
       .findMany({
         where: {
-          metricKey: this.metrickey,
+          metricId: this.merticId,
         },
         include: {
           entry: true,

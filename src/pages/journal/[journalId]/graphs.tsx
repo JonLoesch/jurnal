@@ -30,7 +30,7 @@ export const GraphLayout: FC<
       >
         {metrics.map((item) => (
           <div
-            key={item.key}
+            key={item.id}
             className="relative overflow-hidden rounded-lg bg-white px-4 pb-12 pt-5 shadow sm:px-6 sm:pt-6"
           >
             <dt>
@@ -79,7 +79,7 @@ export const GraphLayout: FC<
               <div className="absolute inset-x-0 bottom-0 bg-gray-50 px-4 py-4 sm:px-6">
                 <div className="text-sm">
                   <div className="font-medium text-indigo-600 hover:text-indigo-500">
-                    <SafeLink page="viewSpecificMetric" metrickey={item.key}>
+                    <SafeLink page="viewSpecificMetric" metricId={item.id}>
                       View all
                       <span className="sr-only"> {item.name} stats</span>
                     </SafeLink>
@@ -95,7 +95,7 @@ export const GraphLayout: FC<
   );
 };
 
-export const getServerSideProps = withAuth(fromUrl.themeid, (auth, params) => auth.theme(params.themeid, async model => ({
+export const getServerSideProps = withAuth(fromUrl.themeid, (auth, params) => auth.journal(params.themeid, async model => ({
   metrics: await model.metrics(),
 })))
 
@@ -103,7 +103,7 @@ export default function Page(
   props: InferGetServerSidePropsType<typeof getServerSideProps>,
 ) {
   return (
-    <JournalScopeLayout themeid={props._auth.theme.id}>
+    <JournalScopeLayout journalId={props._auth.journal.id}>
       <GraphLayout metrics={props.metrics} />
     </JournalScopeLayout>
   );

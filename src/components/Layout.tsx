@@ -32,15 +32,15 @@ export const UnscopedLayout: FC<PropsWithChildren> = (props) => {
     </Layout>
   );
 };
-export const JournalScopeLayout: FC<PropsWithChildren<{ themeid: number }>> = (
+export const JournalScopeLayout: FC<PropsWithChildren<{ journalId: number }>> = (
   props,
 ) => {
   return (
     <Layout
       pages={[
-        { page: "viewJournal", title: "Journal", themeid: props.themeid },
-        { page: "viewTimeline", title: "Timeline", themeid: props.themeid },
-        { page: "viewMetrics", title: "Graphs", themeid: props.themeid },
+        { page: "viewJournal", title: "Journal", journalId: props.journalId },
+        { page: "viewTimeline", title: "Timeline", journalId: props.journalId },
+        { page: "viewMetrics", title: "Graphs", journalId: props.journalId },
         // { pathname: "/journal/[themeid]/notifications", title: "Notifications" },
         // { href: "/todo", title: "Todo list" },
       ]}

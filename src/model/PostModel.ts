@@ -2,21 +2,21 @@ import { Prisma } from "@prisma/client";
 import { AuthorizedContext } from "./AuthorizedContext";
 import { DeltaStatic } from "quill";
 
-export class EntryModel {
+export class PostModel {
   constructor(
-    protected readonly context: AuthorizedContext<"theme">,
-    protected readonly postid: number,
+    protected readonly context: AuthorizedContext<"journal">,
+    protected readonly postId: number,
   ) {}
 
-  async obj<Include extends Prisma.EntryInclude>(include: Include) {
-    return this.context.prisma.entry.findUniqueOrThrow({
-      where: { id: this.postid },
+  async obj<Include extends Prisma.PostInclude>(include: Include) {
+    return this.context.prisma.post.findUniqueOrThrow({
+      where: { id: this.postId },
       include,
     });
   }
 
-  next(self: Prisma.EntryGetPayload<{ select: { date: true; id: true } }>) {
-    return this.context.prisma.entry.findFirst({
+  next(self: Prisma.PostGetPayload<{ select: { date: true; id: true } }>) {
+    return this.context.prisma.post.findFirst({
       where: {
         OR: [
           {
@@ -33,8 +33,8 @@ export class EntryModel {
       orderBy: [{ date: "asc" }, { id: "asc" }],
     });
   }
-  prev(self: Prisma.EntryGetPayload<{ select: { date: true; id: true } }>) {
-    return this.context.prisma.entry.findFirst({
+  prev(self: Prisma.PostGetPayload<{ select: { date: true; id: true } }>) {
+    return this.context.prisma.post.findFirst({
       where: {
         OR: [
           {
@@ -59,7 +59,7 @@ export class EntryModel {
       include: {
         values: {
           where: {
-            entryId: this.postid,
+            entryId: this.postId,
           },
         },
       },
@@ -67,7 +67,7 @@ export class EntryModel {
   }
 }
 
-export class EntryModelWithWritePermissions extends EntryModel {
+export class EntryModelWithWritePermissions extends PostModel {
   async edit(input: {
     values: Record<string, number | null>,
     firstLine: string | null,
@@ -79,29 +79,29 @@ export class EntryModelWithWritePermissions extends EntryModel {
           await db.value.deleteMany({
             where: {
               // entryId_metricKey: {
-              entryId: this.postid,
-              metricKey: key,
+              entryId: this.postId,
+              metricId: key,
               // },
             },
           });
         } else {
           await db.value.upsert({
             where: {
-              entryId_metricKey: {
-                entryId: this.postid,
-                metricKey: key,
+              entryId_metricId: {
+                entryId: this.postId,
+                metricId: key,
               },
             },
-            create: { entryId: this.postid, metricKey: key, value },
+            create: { entryId: this.postId, metricId: key, value },
             update: { value },
           });
         }
       }
-      await db.entry.update({
-        where: { id: this.postid },
+      await db.post.update({
+        where: { id: this.postId },
         data: {
-          postQuill: input.postJson ?? undefined,
-          postText: input.firstLine,
+          quillData: input.postJson ?? undefined,
+          text: input.firstLine,
         },
       });
     });

@@ -20,9 +20,9 @@ import { fromUrl } from "~/lib/urls";
 
 export const getServerSideProps = withAuth(fromUrl.themeid,
   (auth, params) =>
-    auth.theme(params.themeid, async (model) => ({
-      theme: await model.obj({
-        themeSubscription: {
+    auth.journal(params.themeid, async (model) => ({
+      journal: await model.obj({
+        subscriptions: {
           where: {
             userId: auth.session?.user.id ?? "no_one",
           },
@@ -42,10 +42,10 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
   const toast = useToastMessage();
 
   return (
-    <JournalScopeLayout themeid={props._auth.theme.id}>
+    <JournalScopeLayout journalId={props._auth.journal.id}>
       <FullPage>
         <Header>
-          <Title>{props.theme.name}</Title>
+          <Title>{props.journal.name}</Title>
         </Header>
         <MainSection>
           <StackedForm.Main
@@ -53,7 +53,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
               const quillData = getQuillData(editorRef);
               void editJournal
                 .mutateAsync({
-                  themeId: props.theme.id,
+                  themeId: props.journal.id,
                   quill: quillData.full,
                   description: quillData.firstLine,
                 })
@@ -67,8 +67,8 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
               <StackedForm.SectionItem>
                 <WYSIWYG
                   editorRef={editorRef}
-                  editable={props._auth.theme.write}
-                  defaultValue={props.theme.quill}
+                  editable={props._auth.journal.write}
+                  defaultValue={props.journal.quill}
                   onChange={() => {
                     setDirty(true);
                   }}
@@ -87,12 +87,12 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
               <StackedForm.Checkbox
                 label="Sign up for daily email updates"
                 inputKey="dailyNotifications"
-                defaultChecked={props.theme.themeSubscription.length > 0}
+                defaultChecked={props.journal.subscriptions.length > 0}
                 onChange={(x) => {
                   void subscribeApi
                     .mutateAsync({
                       subscribe: x,
-                      themeId: props.theme.id,
+                      themeId: props.journal.id,
                     })
                     .then(() => {
                       toast.newToast(

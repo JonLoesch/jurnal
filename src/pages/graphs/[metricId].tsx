@@ -5,7 +5,7 @@ import {
   InferGetServerSidePropsType,
 } from "next";
 import { CartesianGrid, Line, LineChart, Tooltip, XAxis, YAxis } from "recharts";
-import { GraphLayout } from "~/pages/journal/[themeid]/graphs";
+import { GraphLayout } from "~/pages/journal/[journalId]/graphs";
 import { Zoneless } from "~/lib/ZonelessDate";
 import { JournalScopeLayout } from "~/components/Layout";
 import { withAuth } from "~/model/Authorization";
@@ -14,7 +14,7 @@ import { fromUrl } from "~/lib/urls";
 
 export const getServerSideProps = withAuth(fromUrl.metrickey, (auth, params) => auth.metric(params.metrickey, async model => ({
   values: await model.values(),
-  metrics: await model.theme.metrics(),
+  metrics: await model.journal.metrics(),
 })));
 
 // const data = [{name: 'Page A', uv: 400, pv: 2400, amt: 2400}, ];
@@ -22,7 +22,7 @@ export default function Page(
   props: InferGetServerSidePropsType<typeof getServerSideProps>,
 ) {
   return (
-    <JournalScopeLayout themeid={props._auth.theme.id}>
+    <JournalScopeLayout journalId={props._auth.journal.id}>
       <GraphLayout metrics={props.metrics} hideOnSmall>
         <LineChart
           width={400}
