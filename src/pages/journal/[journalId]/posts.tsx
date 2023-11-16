@@ -14,7 +14,7 @@ import { JournalScopeLayout } from "~/components/Layout";
 import { RelativeToRoot, SafeLink, fromUrl } from "~/lib/urls";
 import { withAuth } from "~/model/Authorization";
 
-export const getServerSideProps = withAuth(fromUrl.themeid, (auth, params) => auth.journal(params.themeid, async model => ({
+export const getServerSideProps = withAuth(fromUrl.journalId, (auth, params) => auth.journal(params.journalId, async model => ({
   posts: await model.posts(),
 })));
 

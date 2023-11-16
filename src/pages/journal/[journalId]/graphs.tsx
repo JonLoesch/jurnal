@@ -95,7 +95,7 @@ export const GraphLayout: FC<
   );
 };
 
-export const getServerSideProps = withAuth(fromUrl.themeid, (auth, params) => auth.journal(params.themeid, async model => ({
+export const getServerSideProps = withAuth(fromUrl.journalId, (auth, params) => auth.journal(params.journalId, async model => ({
   metrics: await model.metrics(),
 })))
 

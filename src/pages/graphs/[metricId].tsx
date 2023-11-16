@@ -12,7 +12,7 @@ import { withAuth } from "~/model/Authorization";
 import { fromUrl } from "~/lib/urls";
 
 
-export const getServerSideProps = withAuth(fromUrl.metrickey, (auth, params) => auth.metric(params.metrickey, async model => ({
+export const getServerSideProps = withAuth(fromUrl.metricId, (auth, params) => auth.metric(params.metricId, async model => ({
   values: await model.values(),
   metrics: await model.journal.metrics(),
 })));

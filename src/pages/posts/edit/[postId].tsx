@@ -36,8 +36,8 @@ import { SafeLink, fromUrl } from "~/lib/urls";
 import { cl } from "~/lib/cl";
 import { withAuth } from "~/model/Authorization";
 
-export const getServerSideProps = withAuth(fromUrl.postid, (auth, params) =>
-  auth.post(params.postid, async (model) => {
+export const getServerSideProps = withAuth(fromUrl.postId, (auth, params) =>
+  auth.post(params.postId, async (model) => {
     const post = await model.obj({});
     const date = post.date;
     const next = await model.next(post);

@@ -18,9 +18,9 @@ import { Toast, useToastMessage } from "~/lib/useToastMessage";
 import { withAuth } from "~/model/Authorization";
 import { fromUrl } from "~/lib/urls";
 
-export const getServerSideProps = withAuth(fromUrl.themeid,
+export const getServerSideProps = withAuth(fromUrl.journalId,
   (auth, params) =>
-    auth.journal(params.themeid, async (model) => ({
+    auth.journal(params.journalId, async (model) => ({
       journal: await model.obj({
         subscriptions: {
           where: {

@@ -69,14 +69,14 @@ export function RelativeToRoot(locator: Locator): string {
 const coerceNumber = z.string().regex(/^\d+$/).transform(Number);
 export const fromUrl = {
   noparams: z.object({}),
-  themeid: z.object({
-    themeid: coerceNumber,
+  journalId: z.object({
+    journalId: coerceNumber,
   }),
-  postid: z.object({
-    postid: coerceNumber,
+  postId: z.object({
+    postId: coerceNumber,
   }),
-  metrickey: z.object({
-    metrickey: z.string().min(1)
+  metricId: z.object({
+    metricId: z.string().min(1)
   })
 
 }
