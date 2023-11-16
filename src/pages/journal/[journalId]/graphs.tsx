@@ -6,6 +6,7 @@ import { z } from "zod";
 import { JournalScopeLayout } from "~/components/Layout";
 import { SafeLink, fromUrl } from "~/lib/urls";
 import { withAuth } from "~/model/Authorization";
+import { JournalModel } from "~/model/JournalModel";
 import { getServerAuthSession } from "~/server/auth";
 import { db } from "~/server/db";
 
@@ -95,8 +96,8 @@ export const GraphLayout: FC<
   );
 };
 
-export const getServerSideProps = withAuth(fromUrl.journalId, (auth, params) => auth.journal(params.journalId, async model => ({
-  metrics: await model.metrics(),
+export const getServerSideProps = withAuth(fromUrl.journalId, (auth, params) => auth.journal(params.journalId, async context => ({
+  metrics: await new JournalModel(context).metrics(),
 })))
 
 export default function Page(

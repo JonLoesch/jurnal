@@ -1,22 +1,26 @@
 import { Zoneless } from "~/lib/ZonelessDate";
 import { AuthorizedContext } from "./AuthorizedContext";
 import { JournalModel } from "./JournalModel";
+import { Model } from "./Model";
 
-export class MetricModel {
-  constructor(
-    private readonly context: AuthorizedContext<"journal">,
-    private readonly merticId: string,
-  ) {}
+export class MetricModel extends Model<['journal', 'metric']> {
+  protected authChecks(): { scopes: readonly ["journal", "metric"]; read: true; write: boolean; } {
+    return {
+      scopes: ['journal', 'metric'],
+      read: true,
+      write: false,
+    }
+  }
 
-  get journal() {
-    return new JournalModel(this.context);
+  protected get metricId() {
+    return this._auth.metric.id;
   }
 
   values() {
-    return this.context.prisma.value
+    return this.prisma.value
       .findMany({
         where: {
-          metricId: this.merticId,
+          metricId: this.metricId,
         },
         include: {
           entry: true,

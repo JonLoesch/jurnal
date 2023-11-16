@@ -35,9 +35,11 @@ import { getQuillData } from "~/lib/getQuillData";
 import { SafeLink, fromUrl } from "~/lib/urls";
 import { cl } from "~/lib/cl";
 import { withAuth } from "~/model/Authorization";
+import { PostModel } from "~/model/PostModel";
 
 export const getServerSideProps = withAuth(fromUrl.postId, (auth, params) =>
-  auth.post(params.postId, async (model) => {
+  auth.post(params.postId, async (context) => {
+    const model = new PostModel(context)
     const post = await model.obj({});
     const date = post.date;
     const next = await model.next(post);

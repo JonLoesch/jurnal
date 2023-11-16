@@ -13,9 +13,10 @@ import { Zoneless } from "~/lib/ZonelessDate";
 import { JournalScopeLayout } from "~/components/Layout";
 import { RelativeToRoot, SafeLink, fromUrl } from "~/lib/urls";
 import { withAuth } from "~/model/Authorization";
+import { JournalModel } from "~/model/JournalModel";
 
-export const getServerSideProps = withAuth(fromUrl.journalId, (auth, params) => auth.journal(params.journalId, async model => ({
-  posts: await model.posts(),
+export const getServerSideProps = withAuth(fromUrl.journalId, (auth, params) => auth.journal(params.journalId, async context => ({
+  posts: await new JournalModel(context).posts(),
 })));
 
 const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (props) => {

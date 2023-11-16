@@ -5,6 +5,8 @@ import { TRPCError } from "@trpc/server";
 import { DeltaStatic } from "quill";
 import { Zoneless } from "~/lib/ZonelessDate";
 import { trpcMutation } from "~/model/Authorization";
+import { JournalModelWithWritePermissions } from "~/model/JournalModel";
+import { PostModelWithWritePermissions } from "~/model/PostModel";
 
 export const postsRouter = createTRPCRouter({
   edit: trpcMutation(
@@ -15,18 +17,18 @@ export const postsRouter = createTRPCRouter({
       values: z.record(z.number().or(z.null())),
     }),
     (auth, input) =>
-      auth.postWithWritePermissions(input.postId, async (model) => {
-        await model.edit(input);
+      auth.post(input.postId, async (context) => {
+        await new PostModelWithWritePermissions(context).edit(input);
         return { success: true };
       }),
   ),
 
   create: trpcMutation(
-    z.object({ themeId: z.number(), date: Zoneless.zod }),
+    z.object({ journalId: z.number(), date: Zoneless.zod }),
     (auth, input) =>
-      auth.journalWithWritePermissions(input.themeId, async (model) => {
+      auth.journal(input.journalId, async (context) => {
         return {
-          newPostId: (await model.newPost(input.date)).id,
+          newPostId: (await new JournalModelWithWritePermissions(context).newPost(input.date)).id,
         };
       }),
   ),

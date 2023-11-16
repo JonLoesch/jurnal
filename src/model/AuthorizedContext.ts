@@ -1,4 +1,5 @@
 import { Prisma, PrismaClient } from "@prisma/client";
+import { Immutable } from "immer";
 import { Session } from "next-auth";
 
 type GlobalContext = {
@@ -6,17 +7,26 @@ type GlobalContext = {
   session: Session | null;
 };
 
-type OptionalContext = {
-  journal: Roles<{ id: number }>;
+type OptionalAuthContext = {
+  journal: Roles<number>;
+  post: Roles<number>;
+  metric: Roles<string>;
 };
-
-export type AuthorizedContext<Key extends keyof OptionalContext> =
-  GlobalContext & Pick<OptionalContext, Key>;
-
-type Roles<Extra extends Record<string, unknown>> = ({
+type Roles<T> = {
   read: boolean;
   write: boolean;
-  //   themeid: number;
-} & Extra) & {
-  // userId?: string;
+  id: T;
 };
+
+export type AuthorizedContextKey = Array<keyof OptionalAuthContext>;
+export type AuthorizedContext<Key extends AuthorizedContextKey> =
+  GlobalContext & {
+    _auth: Pick<OptionalAuthContext, Key[number]>;
+  };
+
+export function _perms<Key extends AuthorizedContextKey>(
+  context: AuthorizedContext<Key>,
+  check: Immutable<Key>,
+): Array<{ read: boolean; write: boolean }> {
+  return check.map((k) => (context._auth as OptionalAuthContext)[k]);
+}

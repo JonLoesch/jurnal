@@ -1,22 +1,35 @@
 import { Prisma } from "@prisma/client";
 import { AuthorizedContext } from "./AuthorizedContext";
 import { DeltaStatic } from "quill";
+import { AuthorizationError } from "./AuthorizationError";
+import { JournalModel } from "./JournalModel";
+import { Model } from "./Model";
 
-export class PostModel {
-  constructor(
-    protected readonly context: AuthorizedContext<"journal">,
-    protected readonly postId: number,
-  ) {}
+export class PostModel  extends Model<['journal', 'post']> {
+  protected authChecks(): { scopes: readonly ["journal", "post"]; read: true; write: boolean; } {
+    return {
+      scopes: ['journal', 'post'],
+      read: true,
+      write: false,
+    }
+  }
+
+  protected get journalId() {
+    return this._auth.journal.id;
+  }
+  protected get postId() {
+    return this._auth.post.id;
+  }
 
   async obj<Include extends Prisma.PostInclude>(include: Include) {
-    return this.context.prisma.post.findUniqueOrThrow({
+    return this.prisma.post.findUniqueOrThrow({
       where: { id: this.postId },
       include,
     });
   }
 
   next(self: Prisma.PostGetPayload<{ select: { date: true; id: true } }>) {
-    return this.context.prisma.post.findFirst({
+    return this.prisma.post.findFirst({
       where: {
         OR: [
           {
@@ -29,12 +42,13 @@ export class PostModel {
             id: { gt: self.id },
           },
         ],
+        journalId: this.journalId,
       },
       orderBy: [{ date: "asc" }, { id: "asc" }],
     });
   }
   prev(self: Prisma.PostGetPayload<{ select: { date: true; id: true } }>) {
-    return this.context.prisma.post.findFirst({
+    return this.prisma.post.findFirst({
       where: {
         OR: [
           {
@@ -47,12 +61,13 @@ export class PostModel {
             id: { lt: self.id },
           },
         ],
+        journalId: this.journalId,
       },
       orderBy: [{ date: "desc" }, { id: "desc" }],
     });
   }
   values() {
-    return this.context.prisma.metric.findMany({
+    return this.prisma.metric.findMany({
       orderBy: {
         sortOrder: "asc",
       },
@@ -67,13 +82,20 @@ export class PostModel {
   }
 }
 
-export class EntryModelWithWritePermissions extends PostModel {
+export class PostModelWithWritePermissions extends PostModel {
+  protected authChecks(): { scopes: readonly ["journal", "post"]; read: true; write: boolean; } {
+    return {
+      ...super.authChecks(),
+      write: true,
+    }
+  };
+
   async edit(input: {
     values: Record<string, number | null>,
     firstLine: string | null,
     postJson: DeltaStatic | null
   }) {
-    await this.context.prisma.$transaction(async (db) => {
+    await this.prisma.$transaction(async (db) => {
       for (const [key, value] of Object.entries(input.values)) {
         if (value === null) {
           await db.value.deleteMany({

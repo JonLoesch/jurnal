@@ -17,11 +17,12 @@ import { api } from "~/utils/api";
 import { Toast, useToastMessage } from "~/lib/useToastMessage";
 import { withAuth } from "~/model/Authorization";
 import { fromUrl } from "~/lib/urls";
+import { JournalModel } from "~/model/JournalModel";
 
 export const getServerSideProps = withAuth(fromUrl.journalId,
   (auth, params) =>
-    auth.journal(params.journalId, async (model) => ({
-      journal: await model.obj({
+    auth.journal(params.journalId, async (context) => ({
+      journal: await new JournalModel(context).obj({
         subscriptions: {
           where: {
             userId: auth.session?.user.id ?? "no_one",

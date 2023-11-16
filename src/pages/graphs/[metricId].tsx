@@ -10,11 +10,13 @@ import { Zoneless } from "~/lib/ZonelessDate";
 import { JournalScopeLayout } from "~/components/Layout";
 import { withAuth } from "~/model/Authorization";
 import { fromUrl } from "~/lib/urls";
+import { MetricModel } from "~/model/MetricModel";
+import { JournalModel } from "~/model/JournalModel";
 
 
-export const getServerSideProps = withAuth(fromUrl.metricId, (auth, params) => auth.metric(params.metricId, async model => ({
-  values: await model.values(),
-  metrics: await model.journal.metrics(),
+export const getServerSideProps = withAuth(fromUrl.metricId, (auth, params) => auth.metric(params.metricId, async context => ({
+  values: await new MetricModel(context).values(),
+  metrics: await new JournalModel(context).metrics(),
 })));
 
 // const data = [{name: 'Page A', uv: 400, pv: 2400, amt: 2400}, ];
