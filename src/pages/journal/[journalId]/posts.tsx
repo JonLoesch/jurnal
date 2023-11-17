@@ -117,7 +117,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (props)
                 className="btn btn-primary"
                 onClick={() => {
                   addPost.mutate({
-                    themeId: props._auth.journal.id,
+                    journalId: props._auth.journal.id,
                     date: Zoneless.fromDate(new Date()),
                   });
                 }}

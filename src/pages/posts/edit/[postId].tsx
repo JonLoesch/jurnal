@@ -155,7 +155,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
             </StackedForm.SectionItem>
             {props.metricValues.map((mv) => (
               <StackedForm.SectionItem key={mv.id}>
-                <GenericMetricAdjust {...mv} metricId={mv.id}/>
+                <GenericMetricAdjust {...mv} metricId={mv.id} postId={props.post.id}/>
               </StackedForm.SectionItem>
             ))}
           </StackedForm.Section>

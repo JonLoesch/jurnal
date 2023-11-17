@@ -4,15 +4,20 @@ import { DeltaStatic } from "quill";
 import { AuthorizationError } from "./AuthorizationError";
 import { JournalModel } from "./JournalModel";
 import { Model } from "./Model";
-import { MetricSchemaAndValue } from "~/lib/metricSchemas";
+import { MetricSchemaAndValue, metricSchemas } from "~/lib/metricSchemas";
+import { z } from "zod";
 
-export class PostModel  extends Model<['journal', 'post']> {
-  protected authChecks(): { scopes: readonly ["journal", "post"]; read: true; write: boolean; } {
+export class PostModel extends Model<["journal", "post"]> {
+  protected authChecks(): {
+    scopes: readonly ["journal", "post"];
+    read: true;
+    write: boolean;
+  } {
     return {
-      scopes: ['journal', 'post'],
+      scopes: ["journal", "post"],
       read: true,
       write: false,
-    }
+    };
   }
 
   protected get journalId() {
@@ -68,76 +73,60 @@ export class PostModel  extends Model<['journal', 'post']> {
     });
   }
   metricValues() {
-    return this.prisma.metric.findMany({
-      where: {
-        journalId: this.journalId,
-      },
-      orderBy: {
-        sortOrder: "asc",
-      },
-      include: {
-        values: {
-          where: {
-            postId: this.postId,
+    return this.prisma.metric
+      .findMany({
+        where: {
+          journalId: this.journalId,
+        },
+        orderBy: {
+          sortOrder: "asc",
+        },
+        include: {
+          values: {
+            where: {
+              postId: this.postId,
+            },
           },
         },
-      },
-    }).then(r => r.map(({values, metricSchema, ...metric}) => {
-      const schemaAndValue = {
-        metricType: metricSchema.metricType,
-        value: values[0]?.metricValue ?? null,
-        schema: metricSchema,
-      } as MetricSchemaAndValue;
-      return {
-        ...metric,
-        ...schemaAndValue,
-      };
-    }));
+      })
+      .then((r) =>
+        r.map(({ values, metricSchema, ...metric }) => {
+          const schemaAndValue = {
+            metricType: metricSchema.metricType,
+            value: values[0]?.metricValue ?? null,
+            schema: metricSchema,
+          } as MetricSchemaAndValue;
+          return {
+            ...metric,
+            ...schemaAndValue,
+          };
+        }),
+      );
   }
 }
 
 export class PostModelWithWritePermissions extends PostModel {
-  protected authChecks(): { scopes: readonly ["journal", "post"]; read: true; write: boolean; } {
+  protected authChecks(): {
+    scopes: readonly ["journal", "post"];
+    read: true;
+    write: boolean;
+  } {
     return {
       ...super.authChecks(),
       write: true,
-    }
-  };
+    };
+  }
 
   async edit(input: {
-    values: Record<string, number | null>,
-    firstLine: string | null,
-    postJson: DeltaStatic | null
+    firstLine: string | null;
+    postJson: DeltaStatic | null;
   }) {
-    await this.prisma.$transaction(async (db) => {
-      for (const [key, value] of Object.entries(input.values)) {
-        if (value === null) {
-          await db.value.deleteMany({
-            where: {
-              postId: this.postId,
-              metricId: key,
-            },
-          });
-        } else {
-          await db.value.upsert({
-            where: {
-              postId_metricId: {
-                postId: this.postId,
-                metricId: key,
-              },
-            },
-            create: { postId: this.postId, metricId: key, value },
-            update: { value },
-          });
-        }
-      }
-      await db.post.update({
-        where: { id: this.postId },
-        data: {
-          quillData: input.postJson ?? undefined,
-          text: input.firstLine,
-        },
-      });
+    await this.prisma.post.update({
+      where: { id: this.postId },
+      data: {
+        quillData: input.postJson ?? undefined,
+        text: input.firstLine,
+      },
     });
   }
 }

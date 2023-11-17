@@ -61,6 +61,7 @@ model Value {
     metric      Metric @relation(fields: [metricId], references: [id])
     metricId    String @map("metricKey")
     value       Float
+    /// [GenericMetricValue]>
     metricValue Json
 
     @@id([postId, metricId])

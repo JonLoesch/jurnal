@@ -2,10 +2,7 @@ import { Session } from "next-auth";
 import { AuthorizationError } from "./AuthorizationError";
 import { Prisma, PrismaClient } from "@prisma/client";
 import { JournalModel, JournalModelWithWritePermissions } from "./JournalModel";
-import {
-  AuthorizedContextKey,
-  AuthorizedContext,
-} from "./AuthorizedContext";
+import { AuthorizedContextKey, AuthorizedContext } from "./AuthorizedContext";
 import { GetServerSideProps } from "next";
 import { getServerAuthSession } from "~/server/auth";
 import { db } from "~/server/db";
@@ -137,48 +134,59 @@ export const Authorization = (
 
     post<Props extends Record<string, unknown>>(
       postId: number,
-      getProps: (context: AuthorizedContext<['journal' , 'post']>) => Promise<Props>,
+      getProps: (
+        context: AuthorizedContext<["journal", "post"]>,
+      ) => Promise<Props>,
     ) {
-      return wrapResult(async() => {
+      return wrapResult(async () => {
         const journal = await fromPostId(postId);
         const post = {
           read: journal.read,
           write: journal.write,
           id: postId,
-        }
-        return includeAuth(getProps, { _auth: { journal, post }, prisma, session });
-      })
+        };
+        return includeAuth(getProps, {
+          _auth: { journal, post },
+          prisma,
+          session,
+        });
+      });
     },
 
     metric<Props extends Record<string, unknown>>(
       metricId: string,
-      getProps: (model: AuthorizedContext<['journal' , 'metric']>) => Promise<Props>,
+      getProps: (
+        model: AuthorizedContext<["journal", "metric"]>,
+      ) => Promise<Props>,
     ) {
       return wrapResult(async () => {
-        const journal = checkJournalAccess(
-          session,
-          (
-            await db.metric.findUnique({
-              where: { id: metricId },
-              include: {
-                journal: {
-                  select: {
-                    id: true,
-                    isPublic: true,
-                    readers: true,
-                    owner: true,
-                  },
-                },
+        const metric = await db.metric.findUniqueOrThrow({
+          where: { id: metricId },
+          include: {
+            journal: {
+              select: {
+                id: true,
+                isPublic: true,
+                readers: true,
+                owner: true,
               },
-            })
-          )?.journal,
-        );
-        const metric = {
-          read: journal.read,
-          write: journal.write,
-          id: metricId,
-        }
-        return includeAuth(getProps, { _auth: { journal, metric }, prisma, session });
+            },
+          },
+        });
+        const journal = checkJournalAccess(session, metric.journal);
+        return includeAuth(getProps, {
+          _auth: {
+            journal,
+            metric: {
+              id: metric.id,
+              read: journal.read,
+              write: journal.write,
+              metricType: metric.metricSchema.metricType,
+            },
+          },
+          prisma,
+          session,
+        });
       });
     },
     session,
@@ -223,9 +231,9 @@ export function trpcMutation<ParamsZod extends z.AnyZodObject, Props>(
   ) => Promise<MaybeAuthError<Props>>,
 ) {
   return protectedProcedure
-    .input(validator.extend({})) // What?  Why does this matter?
+    .input(validator)
     .mutation(async ({ ctx, input }) => {
-      const result = await fn(Authorization(ctx.db, ctx.session), input);
+      const result = await fn(Authorization(ctx.db, ctx.session), input as z.infer<ParamsZod>);
       if (result.error === "authorization_error") {
         throw new TRPCError({
           code: "FORBIDDEN",

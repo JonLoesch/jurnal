@@ -40,6 +40,7 @@
     "next": "^13.4.19",
     "next-auth": "^4.23.0",
     "next-superjson-plugin": "^0.5.9",
+    "quill-delta": "^5.1.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-draft-wysiwyg": "^1.15.0",

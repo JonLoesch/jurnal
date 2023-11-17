@@ -1,12 +1,13 @@
 import { FC, createElement } from "react";
 import { Metric, MetricSchemaAndValue, MetricType } from "~/lib/metricSchemas";
 import { zeroToTen as Ze, zeroToTen } from "./zeroToTen";
+import { api } from "~/utils/api";
 
 type MetricEditProps<T extends MetricType> = {
   name: string;
   metricId: string;
   value: Metric<T>["value"];
-  onChange: (change: Metric<T>["change"]) => void;
+  onChange: (change: Metric<T>["change"] | null) => void;
   schema: Metric<T>["schema"];
 };
 type MetricViewProps<T extends MetricType> = Omit<
@@ -20,11 +21,16 @@ export type MetricUI<T extends MetricType> = {
 };
 
 export const GenericMetricAdjust: FC<
-  MetricSchemaAndValue & { name: string, metricId: string }
+  MetricSchemaAndValue & { name: string; metricId: string, postId: number }
 > = (props) => {
+  const editValue = api.posts.editValue.useMutation();
   switch (props.metricType) {
     case "zeroToTen":
-      return <zeroToTen.edit {...props} onChange={console.log.bind(console)}/>;
+      return <zeroToTen.edit {...props} onChange={change => editValue.mutate({
+        metricId: props.metricId,
+        postId: props.postId,
+        change,
+      })} />;
     case "checkbox":
     case "numeric":
     case "richText":

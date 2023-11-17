@@ -8,7 +8,7 @@ export const zeroToTen: MetricUI<"zeroToTen"> = {
   edit(props) {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const [v, setV] = useReducer<Reducer<number | null, number | null>>((prevValue, newValue) => {
-        props.onChange(newValue !== null ? {value: newValue} : null);
+        props.onChange(newValue);
         return newValue;
     }, props.value?.value ?? null);
     return (

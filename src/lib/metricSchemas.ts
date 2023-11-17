@@ -1,4 +1,4 @@
-import { Delta, DeltaOperation, DeltaStatic } from "quill";
+import Delta from "quill-delta";
 import { z } from "zod";
 
 interface MetricMetadata<
@@ -9,7 +9,7 @@ interface MetricMetadata<
   schema: Schema;
   value: Value;
   change: Change;
-  apply(value: z.infer<Value>, change: z.infer<Change>): z.infer<Value>;
+  apply(value: z.infer<Value> | null, change: z.infer<Change>): z.infer<Value> | null;
 }
 
 function makeSchema<
@@ -27,22 +27,21 @@ function scalarSchema<
     schema: Schema,
     value: Value,
   }
-): MetricMetadata<z.ZodObject<{value: Value}>, z.ZodObject<{value: Value}>, Schema> {
+): MetricMetadata<z.ZodObject<{value: Value}>, Value, Schema> {
   return {
     ...m,
     value: z.object({value}),
-    change: z.object({value}),
+    change: value,
     apply(value, change) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-      return change;
+      return {value: change};
     },
   };
 }
 
 const quillOperation = z.object({
-  insert: z.any().optional(),
+  insert: z.string().or(z.record(z.string(), z.any())).optional(),
   delete: z.number().optional(),
-  retain: z.number().optional(),
+  retain: z.number().or(z.record(z.string(), z.any())).optional(),
   attributes: z.record(z.string(), z.any()).optional(),
 });
 
@@ -58,7 +57,7 @@ const schemas = {
     apply: (value, change) => {
       return change.changeset.reduce(
         (delta, ch) => delta.compose(new Delta(ch)),
-        new Delta(value.ops),
+        new Delta(value?.ops),
       );
     },
   }),
@@ -85,7 +84,7 @@ export type MetricType = keyof typeof schemas;
 export type Metric<MetricSchemaName extends MetricType> =
 {
   value: z.infer<(typeof schemas)[MetricSchemaName]["value"]> | null,
-  change: z.infer<(typeof schemas)[MetricSchemaName]["change"]> | null,
+  change: z.infer<(typeof schemas)[MetricSchemaName]["change"]>,
   schema: z.infer<(typeof schemas)[MetricSchemaName]["schema"]>,
 };
 
@@ -97,11 +96,32 @@ const validateMetricSchema = z.discriminatedUnion("metricType", [
 ]);
 
 const validateMetricValue = z.discriminatedUnion("metricType", [
-  z.object({ value: schemas.richText.value.nullable(), metricType: z.literal("richText") }),
-  z.object({ value: schemas.zeroToTen.value.nullable(), metricType: z.literal("zeroToTen") }),
-  z.object({ value: schemas.numeric.value.nullable(), metricType: z.literal("numeric") }),
-  z.object({ value: schemas.checkbox.value.nullable(), metricType: z.literal("checkbox") }),
+  z.object({ value: schemas.richText.value, metricType: z.literal("richText") }),
+  z.object({ value: schemas.zeroToTen.value, metricType: z.literal("zeroToTen") }),
+  z.object({ value: schemas.numeric.value, metricType: z.literal("numeric") }),
+  z.object({ value: schemas.checkbox.value, metricType: z.literal("checkbox") }),
 ]);
+
+const validateGenericMetricValue = z.union([
+  schemas.richText.value,
+  schemas.zeroToTen.value,
+  schemas.numeric.value,
+  schemas.checkbox.value,
+]);
+
+const validateMetricChange = z.discriminatedUnion("metricType", [
+  z.object({ change: schemas.richText.change, metricType: z.literal("richText") }),
+  z.object({ change: schemas.zeroToTen.change, metricType: z.literal("zeroToTen") }),
+  z.object({ change: schemas.numeric.change, metricType: z.literal("numeric") }),
+  z.object({ change: schemas.checkbox.change, metricType: z.literal("checkbox") }),
+]);
+
+const validateGenericMetricChange = z.union([
+  schemas.richText.change,
+  schemas.zeroToTen.change,
+  schemas.numeric.change,
+  schemas.checkbox.change,
+])
 
 const validateMetricSchemaAndValue = z.discriminatedUnion("metricType", [
   z.object({ value: schemas.richText.value.nullable(), schema: schemas.richText.schema, metricType: z.literal("richText") }),
@@ -117,65 +137,26 @@ const validateMetricSchemaAndValues = z.discriminatedUnion("metricType", [
   z.object({ values: schemas.checkbox.value.nullable().array(), schema: schemas.checkbox.schema, metricType: z.literal("checkbox") }),
 ]);
 
+function updateMetricValue(metricType: MetricType, old: GenericMetricValue | null, change: GenericMetricChange): GenericMetricValue | null {
+  const validatedValue = schemas[metricType].value.nullable().parse(old);
+  const validatedChange = schemas[metricType].change.parse(change);
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
+  return schemas[metricType].apply(validatedValue as any, validatedChange as never);
+}
+
 export const metricSchemas = {
   validateMetricSchemaAndValues,
+  validateMetricSchema,
+  validateMetricValue,
+  validateGenericMetricValue,
+  validateMetricChange,
+  validateGenericMetricChange,
+
+  updateMetricValue,
 }
 
 export type MetricSchemaAndValues = z.infer<typeof validateMetricSchemaAndValues>;
 export type MetricSchemaAndValue = z.infer<typeof validateMetricSchemaAndValue>;
 export type MetricSchema = z.infer<typeof validateMetricSchema>;
-
-// // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
-// let qValue: z.infer<typeof qZod> = null as any;
-// // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
-// let delValue: { ops: DeltaOperation[] } = null as any;
-// qValue = delValue;
-// delValue = qValue;
-
-// type MSchema2 = {
-//   [K in keyof typeof Validators]: {
-//     metricType: K;
-//   } & z.infer<(typeof Validators)[K]["schema"]>;
-// };
-// type MValue2 = {
-//   [K in keyof typeof Validators]: {
-//     metricType: K;
-//     value: z.infer<(typeof Validators)[K]["value"]>;
-//   };
-// };
-
-// type MSchema =
-//   | {
-//       metricType: "zeroToTen";
-//       labels: (string | null)[];
-//     }
-//   | {
-//       metricType: "numeric";
-//       label: string;
-//     }
-//   | {
-//       metric: "checkbox";
-//     };
-
-// type MValue =
-//   | {
-//       metricType: "rich_text";
-//       value: DeltaStatic | null;
-//     }
-//   | {
-//       metricType: "zeroToTen";
-//       value: number;
-//     }
-//   | {
-//       metricType: "numeric";
-//       value: number;
-//     }
-//   | {
-//       metricType: "checkbox";
-//       value: boolean;
-//     };
-
-// const schema: MSchema = { metricType: "numeric", label: "kg" };
-// const value: Omit<MValue, "metricType"> = { value: 277 };
-
-// const combined: MValue = { ...value, metricType: schema.metricType } as MValue;
+export type GenericMetricValue = z.infer<typeof validateGenericMetricValue>;
+export type GenericMetricChange = z.infer<typeof validateGenericMetricChange>;
