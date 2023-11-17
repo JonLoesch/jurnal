@@ -4,6 +4,7 @@ import { DeltaStatic } from "quill";
 import { AuthorizationError } from "./AuthorizationError";
 import { JournalModel } from "./JournalModel";
 import { Model } from "./Model";
+import { MetricSchemaAndValue } from "~/lib/metricSchemas";
 
 export class PostModel  extends Model<['journal', 'post']> {
   protected authChecks(): { scopes: readonly ["journal", "post"]; read: true; write: boolean; } {
@@ -66,19 +67,32 @@ export class PostModel  extends Model<['journal', 'post']> {
       orderBy: [{ date: "desc" }, { id: "desc" }],
     });
   }
-  values() {
+  metricValues() {
     return this.prisma.metric.findMany({
+      where: {
+        journalId: this.journalId,
+      },
       orderBy: {
         sortOrder: "asc",
       },
       include: {
         values: {
           where: {
-            entryId: this.postId,
+            postId: this.postId,
           },
         },
       },
-    });
+    }).then(r => r.map(({values, metricSchema, ...metric}) => {
+      const schemaAndValue = {
+        metricType: metricSchema.metricType,
+        value: values[0]?.metricValue ?? null,
+        schema: metricSchema,
+      } as MetricSchemaAndValue;
+      return {
+        ...metric,
+        ...schemaAndValue,
+      };
+    }));
   }
 }
 
@@ -100,21 +114,19 @@ export class PostModelWithWritePermissions extends PostModel {
         if (value === null) {
           await db.value.deleteMany({
             where: {
-              // entryId_metricKey: {
-              entryId: this.postId,
+              postId: this.postId,
               metricId: key,
-              // },
             },
           });
         } else {
           await db.value.upsert({
             where: {
-              entryId_metricId: {
-                entryId: this.postId,
+              postId_metricId: {
+                postId: this.postId,
                 metricId: key,
               },
             },
-            create: { entryId: this.postId, metricId: key, value },
+            create: { postId: this.postId, metricId: key, value },
             update: { value },
           });
         }

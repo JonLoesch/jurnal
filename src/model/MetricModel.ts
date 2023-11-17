@@ -23,18 +23,18 @@ export class MetricModel extends Model<['journal', 'metric']> {
           metricId: this.metricId,
         },
         include: {
-          entry: true,
+          post: true,
         },
         orderBy: {
-          entry: {
+          post: {
             date: "asc",
           },
         },
       })
       .then((result) =>
-        result.map(({ entry: { date, ...entry }, ...rest }) => ({
+        result.map(({ post: { date, ...post }, ...rest }) => ({
           ...rest,
-          entry: { ...entry, date: Zoneless.fromDate(date) },
+          post: { ...post, date: Zoneless.fromDate(date) },
         })),
       );
   }

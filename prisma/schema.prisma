@@ -32,14 +32,14 @@ model Example {
 }
 
 model Post {
-    id           Int                @id @default(autoincrement())
-    text         String?            @map("postText")
+    id            Int                @id @default(autoincrement())
+    text          String?            @map("postText")
     /// [QuillData]
-    quillData    Json?              @map("postQuill")
-    date         DateTime           @db.Date
-    values       Value[]
-    journal      Journal            @relation(fields: [journalId], references: [id])
-    journalId    Int                @map("themeId")
+    quillData     Json?              @map("postQuill")
+    date          DateTime           @db.Date
+    values        Value[]
+    journal       Journal            @relation(fields: [journalId], references: [id])
+    journalId     Int                @map("themeId")
     subscriptions PostSubscription[]
 
     @@map("Entry")
@@ -56,47 +56,64 @@ model PostSubscription {
 }
 
 model Value {
-    entry    Post   @relation(fields: [entryId], references: [id])
-    entryId  Int
-    metric   Metric @relation(fields: [metricId], references: [id])
-    metricId String @map("metricKey")
-    value    Float
+    post        Post   @relation(fields: [postId], references: [id])
+    postId      Int    @map("entryId")
+    metric      Metric @relation(fields: [metricId], references: [id])
+    metricId    String @map("metricKey")
+    value       Float
+    metricValue Json
 
-    @@id([entryId, metricId])
+    @@id([postId, metricId])
 }
 
 model Metric {
-    id        String  @id @map("key")
-    name      String
-    values    Value[]
-    type      String
+    id            String       @id @map("key")
+    name          String
+    description          String
+    values        Value[]
+    type          String
+    /// [GenericMetricSchema]
+    metricSchema  Json
+    sortOrder     Int
+    journal       Journal      @relation(fields: [journalId], references: [id])
+    journalId     Int          @map("themeId")
+    metricGroup   MetricGroup? @relation(fields: [metricGroupId], references: [id])
+    metricGroupId Int?
+}
+
+model MetricGroup {
+    id        Int      @id @default(autoincrement())
     sortOrder Int
-    journal     Journal @relation(fields: [journalId], references: [id])
-    journalId   Int @map("themeId")
+    name      String
+    description      String
+    metrics   Metric[]
+    journal   Journal  @relation(fields: [journalId], references: [id])
+    journalId Int
 }
 
 model Journal {
-    id                Int                 @id @default(autoincrement())
-    name              String
-    description       String
+    id            Int                 @id @default(autoincrement())
+    name          String
+    description   String
     /// [QuillData]
-    quill             Json?
-    owner             User                @relation(fields: [ownerId], references: [id])
-    ownerId           String
-    isPublic          Boolean
-    readers           Reader[]
-    posts             Post[]
-    metrics           Metric[]
+    quill         Json?
+    owner         User                @relation(fields: [ownerId], references: [id])
+    ownerId       String
+    isPublic      Boolean
+    readers       Reader[]
+    posts         Post[]
+    metrics       Metric[]
     subscriptions ThemeSubscription[]
+    metricGroups  MetricGroup[]
 
     @@map("Theme")
 }
 
 model ThemeSubscription {
     journal   Journal @relation(fields: [journalId], references: [id])
-    user    User    @relation(fields: [userId], references: [id])
+    user      User    @relation(fields: [userId], references: [id])
     journalId Int     @map("theme_id")
-    userId  String  @map("user_id")
+    userId    String  @map("user_id")
 
     @@id([journalId, userId])
 }

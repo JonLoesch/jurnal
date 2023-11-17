@@ -30,7 +30,7 @@ export default function Page(
           width={400}
           height={400}
           data={props.values.map((v) => ({
-            date: Zoneless.toDate(v.entry.date),
+            date: Zoneless.toDate(v.post.date),
             zeroToTen: v.value,
           }))}
         >

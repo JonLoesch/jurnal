@@ -39,7 +39,7 @@ export class JournalModel extends Model<["journal"]> {
         include: {
           values: {
             orderBy: {
-              entry: {
+              post: {
                 date: "desc",
               },
             },

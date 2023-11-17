@@ -1,7 +1,5 @@
 import { format } from "date-fns";
-import {
-  InferGetServerSidePropsType,
-} from "next";
+import { InferGetServerSidePropsType } from "next";
 import {
   FC,
   PropsWithChildren,
@@ -10,7 +8,6 @@ import {
   useRef,
   useState,
 } from "react";
-import { MetricAdjust, MetricBadge } from "~/components/MetricAdjust";
 import {
   FullPage,
   Header,
@@ -26,29 +23,30 @@ import {
   ChevronRightIcon,
   CursorArrowRaysIcon,
 } from "@heroicons/react/24/outline";
-import { type DeltaStatic } from "quill";
+import { DeltaOperation, type DeltaStatic } from "quill";
 import { Zoneless } from "~/lib/ZonelessDate";
 import { JournalScopeLayout } from "~/components/Layout";
-import { WYSIWYG } from "~/components/dynamic";
+import { ReactJsonDebugView, WYSIWYG } from "~/components/dynamic";
 import ReactQuill, { UnprivilegedEditor } from "react-quill";
 import { getQuillData } from "~/lib/getQuillData";
 import { SafeLink, fromUrl } from "~/lib/urls";
 import { cl } from "~/lib/cl";
 import { withAuth } from "~/model/Authorization";
 import { PostModel } from "~/model/PostModel";
+import { GenericMetricAdjust } from "~/components/metrics";
 
 export const getServerSideProps = withAuth(fromUrl.postId, (auth, params) =>
   auth.post(params.postId, async (context) => {
-    const model = new PostModel(context)
+    const model = new PostModel(context);
     const post = await model.obj({});
     const date = post.date;
     const next = await model.next(post);
     const prev = await model.prev(post);
     return {
-      post: {...post, date: Zoneless.fromDate(date)},
+      post: { ...post, date: Zoneless.fromDate(date) },
       next,
       prev,
-      values: await model.values(),
+      metricValues: await model.metricValues(),
     };
   }),
 );
@@ -57,20 +55,12 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
   props,
 ) => {
   const [dirty, setDirty] = useState(false);
-  const v = useMemo(
-    () =>
-      props.values.map(({ values, ...rest }) => ({
-        value: values[0]?.value ?? null,
-        ...rest,
-      })),
-    [props.values],
-  );
-  const [values, setValues] = useState(v);
-  useEffect(() => setValues(v), [v]);
-  function setValue(id: string, value: number | null) {
-    setValues((vs) => vs.map((v) => (v.id !== id ? v : { ...v, value })));
-    setDirty(true);
-  }
+  // const [values, setValues] = useState(v);
+  // useEffect(() => setValues(v), [v]);
+  // function setValue(id: string, value: number | null) {
+  //   setValues((vs) => vs.map((v) => (v.id !== id ? v : { ...v, value })));
+  //   setDirty(true);
+  // }
   const editorRef = useRef<UnprivilegedEditor>(null);
   const [getPostJson, setPostJson] = useState<
     () => {
@@ -132,7 +122,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
           </Subtitle>
         </Header>
         <MainSection>
-          <StackedForm.Main
+          {/* <StackedForm.Main
             onSubmit={() => {
               const postJson = getQuillData(editorRef);
               void editPost
@@ -146,57 +136,36 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
                 })
                 .then(() => setDirty(false));
             }}
+          > */}
+          <StackedForm.Section
+            title="Journal"
+            description="How did your day go?"
           >
-            <StackedForm.Section
-              title="Journal"
-              description="How did your day go?"
-            >
-              <StackedForm.SectionItem>
-                <div key={props.post.id}>
-                  <WYSIWYG
-                    editorRef={editorRef}
-                    editable={props._auth.journal.write}
-                    defaultValue={props.post.quillData}
-                    onChange={() => {
-                      setDirty(true);
-                    }}
-                  />
-                </div>
+            <StackedForm.SectionItem>
+              <div key={props.post.id}>
+                <WYSIWYG
+                  editorRef={editorRef}
+                  editable={props._auth.journal.write}
+                  defaultValue={props.post.quillData}
+                  onChange={() => {
+                    setDirty(true);
+                  }}
+                />
+              </div>
+            </StackedForm.SectionItem>
+            {props.metricValues.map((mv) => (
+              <StackedForm.SectionItem key={mv.id}>
+                <GenericMetricAdjust {...mv} metricId={mv.id}/>
               </StackedForm.SectionItem>
-              {props._auth.journal.write &&
-                values.map((v) => (
-                  <StackedForm.SectionItem key={v.id}>
-                    <MetricAdjust
-                      metricId={v.id}
-                      name={v.name}
-                      value={v.value}
-                      onChange={(newValue) => setValue(v.id, newValue)}
-                    />
-                  </StackedForm.SectionItem>
-                ))}
-              {!props._auth.journal.write && (
-                <StackedForm.SectionItem>
-                  {values.map((v) =>
-                    v.value === null ? null : (
-                      <MetricBadge
-                        key={v.id}
-                        metricKey={v.id}
-                        name={v.name}
-                        value={v.value}
-                        // onChange={(newValue) => setValue(v.key, newValue)}
-                      />
-                    ),
-                  )}
-                </StackedForm.SectionItem>
-              )}
-            </StackedForm.Section>
-            <StackedForm.ButtonPanel>
-              <StackedForm.SubmitButton disabled={!dirty} label="Save">
-                {editPost.isLoading && <CursorArrowRaysIcon className="w-8" />}
-                {editPost.isSuccess && <CheckIcon className="w-8" />}
-              </StackedForm.SubmitButton>
-            </StackedForm.ButtonPanel>
-          </StackedForm.Main>
+            ))}
+          </StackedForm.Section>
+          <StackedForm.ButtonPanel>
+            <StackedForm.SubmitButton disabled={!dirty} label="Save">
+              {editPost.isLoading && <CursorArrowRaysIcon className="w-8" />}
+              {editPost.isSuccess && <CheckIcon className="w-8" />}
+            </StackedForm.SubmitButton>
+          </StackedForm.ButtonPanel>
+          {/* </StackedForm.Main> */}
         </MainSection>
       </FullPage>
     </JournalScopeLayout>
