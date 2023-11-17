@@ -6,7 +6,7 @@ declare global {
     // or you can use classes, interfaces, object types, etc.
     namespace PrismaJson {
         type QuillData = DeltaStatic
-        type GenericMetricSchema = metrics.MetricSchema
+        type MetricSchema = metrics.MetricSchema
         type GenericMetricValue = metrics.GenericMetricValue
     }
   }

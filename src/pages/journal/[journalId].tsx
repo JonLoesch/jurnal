@@ -54,7 +54,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
               const quillData = getQuillData(editorRef);
               void editJournal
                 .mutateAsync({
-                  themeId: props.journal.id,
+                  journalId: props.journal.id,
                   quill: quillData.full,
                   description: quillData.firstLine,
                 })

@@ -73,7 +73,7 @@ model Metric {
     description          String
     values        Value[]
     type          String
-    /// [GenericMetricSchema]
+    /// [MetricSchema]
     metricSchema  Json
     sortOrder     Int
     journal       Journal      @relation(fields: [journalId], references: [id])

@@ -1,7 +1,7 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import { addDays, compareAsc, startOfToday, subDays } from "date-fns";
 import { z } from "zod";
-import { metricSchemas } from "~/lib/metricSchemas";
+import { MetricSchema, metricSchemas } from "~/lib/metricSchemas";
 import { v4 as uuidv4 } from "uuid";
 
 const prisma = new PrismaClient();
@@ -213,7 +213,7 @@ async function main() {
               metricSchema: {
                 ...metricData.schema,
                 metricType: metricData.metricType,
-              },
+              } as MetricSchema,
               journalId: journal.id, // deprecated
               sortOrder: metricData.index + 1,
             },

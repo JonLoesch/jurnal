@@ -17,6 +17,7 @@ import logo from "~/images/logo.jpg";
 import { signIn, signOut, useSession } from "next-auth/react";
 import { ifElse } from "~/lib/ifElse";
 import { Locator, SafeLink } from "~/lib/urls";
+import { useApiConditions, useCondition } from "~/lib/watcher";
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -32,9 +33,9 @@ export const UnscopedLayout: FC<PropsWithChildren> = (props) => {
     </Layout>
   );
 };
-export const JournalScopeLayout: FC<PropsWithChildren<{ journalId: number }>> = (
-  props,
-) => {
+export const JournalScopeLayout: FC<
+  PropsWithChildren<{ journalId: number }>
+> = (props) => {
   return (
     <Layout
       pages={[
@@ -64,14 +65,17 @@ type LayoutProps = PropsWithChildren<{
 
 const LargeLayout: FC<LayoutProps> = (props) => {
   const session = useSession();
+  const c = useApiConditions();
+  const apiErrored = useCondition(c.apiErrored);
+  const apiLoadingOverTwoSeconds = useCondition(c.apiLoadingOverTwoSeconds);
 
   return (
     <div>
       <Menu as="nav" className="bg-white shadow">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <div className="flex h-16 justify-between">
+          <div className="flex h-16 items-center justify-between">
             <div className="flex">
-              <div className="flex flex-shrink-0 items-center">
+              <div className="flex flex-shrink-0">
                 <SafeLink page="index">
                   <Image
                     src={logo}
@@ -81,12 +85,9 @@ const LargeLayout: FC<LayoutProps> = (props) => {
                   />
                 </SafeLink>
               </div>
-              <div className="ml-6 flex space-x-8">
+              <div className="ml-6 flex space-x-8 text-sm font-medium">
                 {props.pages.map((p) => (
-                  <div
-                    key={p.page}
-                    className="inline-flex items-center  text-sm font-medium"
-                  >
+                  <div key={p.page}>
                     <SafeLink {...p}>
                       <div className="border-b-2  border-transparent px-1 pt-1 text-gray-900 link-active:border-indigo-500 link-active:text-gray-500 link-active:hover:border-gray-300 link-active:hover:text-gray-700">
                         {p.title}
@@ -97,13 +98,21 @@ const LargeLayout: FC<LayoutProps> = (props) => {
               </div>
             </div>
 
-            <div className="ml-6 flex items-center">
+            {apiErrored ? (
+              <div className="border-2 border-red-400 bg-red-200 bg-opacity-30 px-1">
+                An error occured while saving.
+              </div>
+            ) : apiLoadingOverTwoSeconds ? (
+              <div className="border-2 border-yellow-400 bg-yellow-200 bg-opacity-30 px-1">
+                Saving...
+              </div>
+            ) : null}
+
+            <div className="ml-6 flex">
               {/* Profile dropdown */}
               <div className="relative ml-3">
                 <div>
-                  <Menu.Button
-                    className="relative flex rounded-full bg-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                  >
+                  <Menu.Button className="relative flex rounded-full bg-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
                     <span className="absolute -inset-1.5" />
                     <span className="sr-only">Open user menu</span>
                     {ifElse(
@@ -184,14 +193,17 @@ const SmallLink: FC<Pages[0]> = (props) => {
 };
 const SmallLayout: FC<LayoutProps> = (props) => {
   const session = useSession();
+  const c = useApiConditions();
+  const apiErrored = useCondition(c.apiErrored);
+  const apiLoadingOverTwoSeconds = useCondition(c.apiLoadingOverTwoSeconds);
 
   return (
     <div>
       <Menu as="nav" className="bg-white shadow">
         <div className="mx-auto max-w-7xl px-4">
-          <div className="flex h-16 justify-between">
+          <div className="flex h-16 justify-between items-center">
             <div className="flex">
-              <div className="flex flex-shrink-0 items-center">
+              <div className="flex flex-shrink-0">
                 <SafeLink page="index">
                   <Image
                     src={logo}
@@ -203,10 +215,20 @@ const SmallLayout: FC<LayoutProps> = (props) => {
               </div>
             </div>
 
-            <div className="-mr-2 flex items-center">
+            {apiErrored ? (
+              <div className="border-2 border-red-400 bg-red-200 bg-opacity-30 px-1">
+                An error occured while saving.
+              </div>
+            ) : apiLoadingOverTwoSeconds ? (
+              <div className="border-2 border-yellow-400 bg-yellow-200 bg-opacity-30 px-1">
+                Saving...
+              </div>
+            ) : null}
+
+            <div className="-mr-2 flex">
               {/* Mobile menu button */}
               <Menu.Button>
-                <div className="relative inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500">
+                <div className="relative inline-flex justify-center rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500">
                   <span className="absolute -inset-0.5" />
                   <span className="sr-only">Open main menu</span>
                   <XMarkIcon
