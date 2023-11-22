@@ -1,16 +1,19 @@
 import { ifElse } from "~/lib/ifElse";
 import { type MetricUI } from ".";
 import { z } from "zod";
-import { CSSProperties, Reducer, useReducer, useState } from "react";
+import { CSSProperties, Reducer, useCallback, useReducer, useState } from "react";
 import { XCircleIcon } from "@heroicons/react/24/outline";
 
 export const zeroToTen: MetricUI<"zeroToTen"> = {
-  edit(props) {
+  Edit(props) {
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    const [v, setV] = useReducer<Reducer<number | null, number | null>>((prevValue, newValue) => {
-        props.onChange(newValue);
-        return newValue;
-    }, props.value?.value ?? null);
+    const [v, setV2] = useState<number|null>(props.value?.value ?? null);
+    const {onChange} = props;
+    const setV = useCallback((newValue: number|null) => {
+      onChange(newValue);
+      setV2(newValue);
+    }, [onChange]);
+    
     return (
         <>
           <div className="flex items-center">
@@ -54,7 +57,7 @@ export const zeroToTen: MetricUI<"zeroToTen"> = {
         </>
       );
   },
-  view(props) {
+  View(props) {
     return (
       <div className="flex h-10 justify-between rounded-full">
         <span>{props.name}:</span>

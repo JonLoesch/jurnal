@@ -52,13 +52,10 @@ const schemas = {
       ops: quillOperation.array().optional(),
     }),
     change: z.object({
-      changeset: quillOperation.array().array(),
+      changeset: quillOperation.array(),
     }),
     apply: (value, change) => {
-      return change.changeset.reduce(
-        (delta, ch) => delta.compose(new Delta(ch)),
-        new Delta(value?.ops),
-      );
+      return new Delta(value?.ops).compose(new Delta(change.changeset));
     },
   }),
   zeroToTen: scalarSchema({

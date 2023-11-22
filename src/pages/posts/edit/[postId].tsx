@@ -74,7 +74,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
   }));
 
   const editPost = api.posts.edit.useMutation();
-
+  
   return (
     <JournalScopeLayout journalId={props._auth.journal.id}>
       <FullPage>
@@ -144,19 +144,24 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
           >
             <StackedForm.SectionItem>
               <div key={props.post.id}>
-                <WYSIWYG
+                {/* <WYSIWYG
                   editorRef={editorRef}
                   editable={props._auth.journal.write}
                   defaultValue={props.post.quillData}
                   onChange={() => {
                     setDirty(true);
                   }}
-                />
+                /> */}
               </div>
             </StackedForm.SectionItem>
+
             {props.metricValues.map((mv) => (
               <StackedForm.SectionItem key={mv.id}>
-                <GenericMetricAdjust {...mv} metricId={mv.id} postId={props.post.id}/>
+                <GenericMetricAdjust
+                  {...mv}
+                  metricId={mv.id}
+                  postId={props.post.id}
+                />
               </StackedForm.SectionItem>
             ))}
           </StackedForm.Section>

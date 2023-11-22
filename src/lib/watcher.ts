@@ -59,7 +59,7 @@ export function useApiConditions() {
 
 export function useWatchMutation(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  { isError, isLoading }: UseMutationResult<any, any, any, any>,
+  { isError, isLoading }: Pick<UseMutationResult<any, any, any, any>, 'isError' | 'isLoading'>,
 ) {
   const { apiErrored, apiLoadingOverTwoSeconds } = useApiConditions();
   useEffect(() => {
