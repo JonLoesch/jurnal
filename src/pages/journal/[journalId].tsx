@@ -1,6 +1,6 @@
 import { CheckIcon, CursorArrowRaysIcon } from "@heroicons/react/24/outline";
 import { GetServerSidePropsContext, InferGetServerSidePropsType } from "next";
-import { DeltaStatic } from "quill";
+import Quill, { DeltaStatic } from "quill";
 import { FC, useRef, useState } from "react";
 import { UnprivilegedEditor } from "react-quill";
 import { JournalScopeLayout } from "~/components/Layout";
@@ -37,7 +37,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
 ) => {
   const [dirty, setDirty] = useState(false);
   const editJournal = api.journals.edit.useMutation();
-  const editorRef = useRef<UnprivilegedEditor>(null);
+  const editorRef = useRef<Quill>(null);
 
   const subscribeApi = api.journals.subscribe.useMutation();
   const toast = useToastMessage();

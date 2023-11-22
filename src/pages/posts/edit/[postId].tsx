@@ -33,7 +33,7 @@ import { SafeLink, fromUrl } from "~/lib/urls";
 import { cl } from "~/lib/cl";
 import { withAuth } from "~/model/Authorization";
 import { PostModel } from "~/model/PostModel";
-import { GenericMetricAdjust } from "~/components/metrics";
+import { GenericMetric, GenericMetricAdjust } from "~/components/metrics";
 import { useApiConditions, useCondition } from "~/lib/watcher";
 
 export const getServerSideProps = withAuth(fromUrl.postId, (auth, params) =>
@@ -157,7 +157,8 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
 
             {props.metricValues.map((mv) => (
               <StackedForm.SectionItem key={mv.id}>
-                <GenericMetricAdjust
+                <GenericMetric
+                  edittable={props._auth.post.write}
                   {...mv}
                   metricId={mv.id}
                   postId={props.post.id}

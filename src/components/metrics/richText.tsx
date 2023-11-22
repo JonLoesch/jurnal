@@ -5,15 +5,18 @@ export const richText: MetricUI<"richText"> = {
   Edit(props) {
     return (
       <WYSIWYG
-        editable
+        editable={true}
         defaultValue={props.value}
         onChange={(delta) => {
-          props.onChange({changeset: delta.ops});
+          props.onChange({ changeset: delta.ops });
         }}
       />
     );
   },
   View(props) {
-    return null;
+    return <WYSIWYG
+      editable={false}
+      defaultValue={props.value}
+    />;
   },
 };
