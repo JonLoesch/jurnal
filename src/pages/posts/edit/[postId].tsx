@@ -77,7 +77,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
   
   return (
     <JournalScopeLayout journalId={props._auth.journal.id}>
-      <FullPage>
+      <FullPage key={props.post.id}>
         <Header>
           <Title>
             {format(Zoneless.toDate(props.post.date), "EEEE MMMM d")}
