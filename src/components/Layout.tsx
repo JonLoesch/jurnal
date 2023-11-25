@@ -12,7 +12,9 @@ import { Menu, Transition } from "@headlessui/react";
 import {
   Bars3Icon,
   BellIcon,
+  ExclamationTriangleIcon,
   UserCircleIcon,
+  XCircleIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import Image from "next/image";
@@ -22,11 +24,6 @@ import { signIn, signOut, useSession } from "next-auth/react";
 import { ifElse } from "~/lib/ifElse";
 import { Locator, SafeLink } from "~/lib/urls";
 import { useApiConditions, useCondition } from "~/lib/watcher";
-import { useHoveredElement } from "~/lib/hoveredElement";
-
-function classNames(...classes: string[]) {
-  return classes.filter(Boolean).join(" ");
-}
 
 const userMenuPages: Pages = [{ page: "myJournals", title: "My Journals" }];
 const home: Pages[0] = { page: "index", title: "Home" };
@@ -68,279 +65,129 @@ type LayoutProps = PropsWithChildren<{
   userMenuPages: Pages;
 }>;
 
-const LargeLayout: FC<LayoutProps> = (props) => {
+
+
+
+// For explanation of 'tabIndex={0}':
+// https://daisyui.com/components/dropdown/#method-2-using-label-and-css-focus
+
+const Logo = (props: { className?: string }) => {
+  return <Image src={logo} alt="Jurnal" priority className={props.className} />;
+};
+const UserWidget: FC<Pick<LayoutProps, "userMenuPages">> = (props) => {
   const session = useSession();
+
+  if (!session.data?.user) {
+    return (
+      <button onClick={() => void signIn()} className="btn">
+        <UserCircleIcon className="max-md:hidden" />
+        Sign in
+      </button>
+    );
+  }
+  return (
+    <div className="dropdown dropdown-end">
+      <label tabIndex={0} className="btn btn-ghost flex flex-row">
+        {ifElse(
+          session.data.user.image,
+          (i) => (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img className="h-10 w-10 rounded-full" src={i} alt="" />
+              <span className="max-md:hidden"> {session.data.user.name} </span>
+            </>
+          ),
+          () => (
+            <>
+              <span> {session.data.user.name ?? "My profile"} </span>
+            </>
+          ),
+        )}
+      </label>
+      <ul tabIndex={0} className="menu dropdown-content">
+        <li>
+          <a onClick={() => void signOut()}>Sign out</a>
+        </li>
+        {props.userMenuPages.map((p) => (
+          <li key={p.title}>
+            <SafeLink {...p}>{p.title}</SafeLink>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+
+const Alert = () => {
   const c = useApiConditions();
   const apiErrored = useCondition(c.apiErrored);
   const apiLoadingOverTwoSeconds = useCondition(c.apiLoadingOverTwoSeconds);
 
-  return (
-    <div>
-      <Menu as="nav" className="bg-white shadow">
-        <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between">
-            <div className="flex">
-              <div className="flex flex-shrink-0">
-                <SafeLink page="index">
-                  <Image
-                    src={logo}
-                    className="h-8 w-auto"
-                    alt="Jurnal"
-                    priority
-                  />
-                </SafeLink>
-              </div>
-              <div className="ml-6 flex space-x-8 text-sm font-medium">
-                {props.pages.map((p) => (
-                  <div key={p.page}>
-                    <SafeLink {...p}>
-                      <div className="border-b-2  border-transparent px-1 pt-1 text-gray-900 link-active:border-indigo-500 link-active:text-gray-500 link-active:hover:border-gray-300 link-active:hover:text-gray-700">
-                        {p.title}
-                      </div>
-                    </SafeLink>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {apiErrored ? (
-              <div className="border-2 border-red-400 bg-red-200 bg-opacity-30 px-1">
-                An error occured while saving.
-              </div>
-            ) : apiLoadingOverTwoSeconds ? (
-              <div className="border-2 border-yellow-400 bg-yellow-200 bg-opacity-30 px-1">
-                Saving...
-              </div>
-            ) : null}
-
-            <div className="ml-6 flex">
-              {/* Profile dropdown */}
-              <div className="relative ml-3">
-                <div>
-                  <Menu.Button className="relative flex rounded-full bg-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-                    <span className="absolute -inset-1.5" />
-                    <span className="sr-only">Open user menu</span>
-                    {ifElse(
-                      session.data?.user.image,
-                      (src) => (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          className="h-8 w-8 rounded-full"
-                          src={src}
-                          alt=""
-                        />
-                      ),
-                      () => (
-                        <UserCircleIcon className="h-8 w-8" />
-                      ),
-                    )}
-                  </Menu.Button>
-                </div>
-                <Transition
-                  as={Fragment}
-                  enter="transition ease-out duration-200"
-                  enterFrom="transform opacity-0 scale-95"
-                  enterTo="transform opacity-100 scale-100"
-                  leave="transition ease-in duration-75"
-                  leaveFrom="transform opacity-100 scale-100"
-                  leaveTo="transform opacity-0 scale-95"
-                >
-                  <Menu.Items className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                    <Menu.Item>
-                      {({ active }) => (
-                        <button
-                          className={classNames(
-                            active ? "bg-gray-100" : "",
-                            "block w-full px-4 py-2 text-left text-sm text-gray-700",
-                          )}
-                          onClick={
-                            session.data?.user
-                              ? () => void signOut()
-                              : () => void signIn()
-                          }
-                        >
-                          {session.data?.user ? "Sign out" : "Sign in"}
-                        </button>
-                      )}
-                    </Menu.Item>
-                    {props.userMenuPages.map((p) => (
-                      <Menu.Item key={p.page}>
-                        <div className="text-left text-sm text-gray-700 ui-active:bg-gray-100">
-                          <SafeLink {...p}>
-                            <div className="px-4 py-2">{p.title}</div>
-                          </SafeLink>
-                        </div>
-                      </Menu.Item>
-                    ))}
-                  </Menu.Items>
-                </Transition>
-              </div>
-            </div>
-          </div>
-        </div>
-      </Menu>
-      {props.children}
-    </div>
-  );
-};
-
-const SmallItem: FC<PropsWithChildren> = ({ children }) => {
-  return (
-    <div className="block border-l-4 border-transparent text-base font-medium text-gray-500 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700">
-      {children}
-    </div>
-  );
-};
-const SmallLink: FC<Pages[0]> = (props) => {
-  return (
-    <div className="block border-l-4 border-transparent text-base font-medium text-gray-500 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700"></div>
-  );
-};
-
-const SmallLayout: FC<LayoutProps> = (props) => {
-  const session = useSession();
-  const c = useApiConditions();
-  const apiErrored = useCondition(c.apiErrored);
-  const apiLoadingOverTwoSeconds = useCondition(c.apiLoadingOverTwoSeconds);
-
-  return (
-    <div className="fixed inset-0 flex flex-col">
-      <Menu as="nav" className="shrink-0 bg-white shadow">
-        <div className="m-auto max-w-7xl px-4">
-          <div className="flex h-16 items-center justify-between">
-            <div className="flex">
-              <div className="flex flex-shrink-0">
-                <SafeLink page="index">
-                  <Image
-                    src={logo}
-                    className="h-8 w-auto ui-open:hidden"
-                    alt="Jurnal"
-                    priority
-                  />
-                </SafeLink>
-              </div>
-            </div>
-
-            {apiErrored ? (
-              <div className="border-2 border-red-400 bg-red-200 bg-opacity-30 px-1">
-                An error occured while saving.
-              </div>
-            ) : apiLoadingOverTwoSeconds ? (
-              <div className="border-2 border-yellow-400 bg-yellow-200 bg-opacity-30 px-1">
-                Saving...
-              </div>
-            ) : null}
-
-            <div className="-mr-2 flex">
-              {/* Mobile menu button */}
-              <Menu.Button>
-                <div className="relative inline-flex justify-center rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500">
-                  <span className="absolute -inset-0.5" />
-                  <span className="sr-only">Open main menu</span>
-                  <XMarkIcon
-                    className="block h-6 w-6 ui-not-open:hidden"
-                    aria-hidden="true"
-                  />
-                  <Bars3Icon
-                    className="block h-6 w-6 ui-open:hidden"
-                    aria-hidden="true"
-                  />
-                </div>
-              </Menu.Button>
-            </div>
-          </div>
-        </div>
-
-        <Menu.Items>
-          <div className="-mt-10 space-y-1 pb-3">
-            {[home, ...props.pages].map((p) => (
-              <SmallItem {...p} key={p.page}>
-                <SafeLink {...p}>
-                  <div className="py-2 pl-3 pr-4">{p.title}</div>
-                </SafeLink>
-              </SmallItem>
-            ))}
-          </div>
-          <div className="border-t border-gray-200 pb-3 pt-4">
-            {ifElse(
-              session.data?.user,
-              (u) => (
-                <>
-                  <div className="mb-3 flex items-center px-4">
-                    <div className="flex-shrink-0">
-                      {u.image !== null && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          className="h-10 w-10 rounded-full"
-                          src={u.image}
-                          alt=""
-                        />
-                      )}
-                    </div>
-                    <div className="ml-3">
-                      <div className="text-base font-medium text-gray-800">
-                        {u.name}
-                      </div>
-                      <div className="text-sm font-medium text-gray-500">
-                        {u.email}
-                      </div>
-                    </div>
-                    {/* <button
-                        type="button"
-                        className="relative ml-auto flex-shrink-0 rounded-full bg-white p-1 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                      >
-                        <span className="absolute -inset-1.5" />
-                        <span className="sr-only">View notifications</span>
-                        <BellIcon className="h-6 w-6" aria-hidden="true" />
-                      </button> */}
-                  </div>
-                  <SmallItem>
-                    <button
-                      onClick={() => void signOut()}
-                      className="w-full py-2 pl-3 pr-4 text-left"
-                    >
-                      Sign out
-                    </button>
-                  </SmallItem>
-                  {props.userMenuPages.map((p) => (
-                    <SmallItem key={p.page} {...p}>
-                      <SafeLink {...p}>
-                        <div className="py-2 pl-3 pr-4">{p.title}</div>
-                      </SafeLink>
-                    </SmallItem>
-                  ))}
-                </>
-              ),
-              () => (
-                <SmallItem>
-                  <button
-                    onClick={() => void signIn()}
-                    className="w-full py-2 pl-3 pr-4 text-left"
-                  >
-                    Sign In
-                  </button>
-                </SmallItem>
-              ),
-            )}
-          </div>
-        </Menu.Items>
-      </Menu>
-      <div className="shrink-1 overflow-y-auto">{props.children}</div>
-    </div>
-  );
+  if (apiErrored) {
+    return (
+      <div className="alert alert-error">
+        <XCircleIcon className="h-6 shrink-0" />
+        An error occured while saving.
+      </div>
+    );
+  } else if (apiLoadingOverTwoSeconds) {
+    return (
+      <div className="alert alert-warning">
+        <ExclamationTriangleIcon className="h-6 shrink-0" />
+        Saving...
+      </div>
+    );
+  } else {
+    return null
+  }
 };
 
 const Layout: FC<LayoutProps> = (props) => {
-  const pathname = usePathname();
-
   return (
-    <>
-      <div className="max-sm:hidden">
-        <LargeLayout {...props} />
+    <div className="fixed inset-0 flex flex-col">
+      <div className="navbar flex-none bg-base-100">
+        <div className="navbar-start">
+          <div className="dropdown md:hidden">
+            <label tabIndex={0} className="btn btn-ghost md:hidden">
+              <Bars3Icon className="h-5 w-5" />
+            </label>
+            <ul
+              tabIndex={0}
+              className="menu dropdown-content rounded-box menu-sm z-[1] mt-3 w-52 bg-base-100 p-2 shadow"
+            >
+              <li>
+                <SafeLink page="index">Home page</SafeLink>
+              </li>
+              {props.pages.map((p) => (
+                <li key={p.title}>
+                  <SafeLink {...p}>{p.title}</SafeLink>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="btn btn-ghost max-md:hidden">
+            <SafeLink page="index">
+              <Logo className="h-8 w-auto" />
+            </SafeLink>
+          </div>
+        </div>
+        <div className="navbar-center">
+          <ul className="menu menu-horizontal px-1 max-md:hidden">
+            {props.pages.map((p) => (
+              <li key={p.title}>
+                <SafeLink {...p}>{p.title}</SafeLink>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="navbar-end">
+          <UserWidget userMenuPages={props.userMenuPages} />
+        </div>
       </div>
-      <div className="sm:hidden">
-        <SmallLayout {...props} />
+      <div className="flex-1 overflow-auto">{props.children}</div>
+      <div className="toast px-8 max-md:toast-top max-md:toast-center">
+        <Alert/>
       </div>
-    </>
+    </div>
   );
 };
