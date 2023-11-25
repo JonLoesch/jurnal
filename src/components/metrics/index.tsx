@@ -12,6 +12,7 @@ import { zeroToTen as Ze, zeroToTen } from "./zeroToTen";
 import { RouterInputs, api } from "~/utils/api";
 import { useWatchMutation } from "~/lib/watcher";
 import { richText } from "./richText";
+import { checkbox } from "./checkbox";
 import Delta from "quill-delta";
 
 type MetricEditProps<T extends MetricType> = {
@@ -54,6 +55,7 @@ const GenericMetricView: FC<GenericMetricProps> = (props) => {
     case "richText":
       return <richText.View {...props} />;
     case "checkbox":
+      return <checkbox.View {...props} />;
     case "numeric":
       return <>Generic placeholder {props.metricType}</>;
   }
@@ -117,6 +119,18 @@ export const GenericMetricAdjust: FC<GenericMetricProps> = (props) => {
       );
 
     case "checkbox":
+      return (
+        <checkbox.Edit
+          {...props}
+          onChange={(change) =>
+            void editValue.mutate({
+              metricId: props.metricId,
+              postId: props.postId,
+              change,
+            })
+          }
+        />
+      );
     case "numeric":
       return <>Generic placeholder {props.metricType}</>;
   }

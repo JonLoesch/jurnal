@@ -1,4 +1,5 @@
-import { FC, Fragment, PropsWithChildren } from "react";
+import { FC, Fragment, PropsWithChildren, useRef } from "react";
+import { useTooltipWatch } from "~/lib/hoveredElement";
 import { ifElse } from "~/lib/ifElse";
 import { Locator, SafeLink } from "~/lib/urls";
 
@@ -18,11 +19,9 @@ export const Title: FC<PropsWithChildren> = (props) => {
     </h1>
   );
 };
-export const Subtitle : FC<PropsWithChildren> = props => {
-  return <div className="mx-0 sm:mx-4 lg:mx-10">
-    {props.children}
-  </div>
-}
+export const Subtitle: FC<PropsWithChildren> = (props) => {
+  return <div className="mx-0 sm:mx-4 lg:mx-10">{props.children}</div>;
+};
 export const MainSection: FC<PropsWithChildren> = (props) => {
   return (
     <main>
@@ -35,6 +34,38 @@ export const MainSection: FC<PropsWithChildren> = (props) => {
 export const FullPage: FC<PropsWithChildren> = (props) => {
   return <div className="py-10"> {props.children}</div>;
 };
+
+export const Groups = {
+  GroupSection(props: PropsWithChildren) {
+    return <div className="flex flex-col gap-3">{props.children}</div>;
+  },
+  Group(props: PropsWithChildren<{ title: string; description: string }>) {
+    return (
+      <div className="border-l-2 border-black pl-2 bg-gray-200 py-3 pr-5">
+        <div className="sticky -top-1 py-2 text-lg opacity-100 bg-gray-200 z-10">
+          {props.title}
+        </div>
+        <div className="text-gray-400 px-5"> {props.description}</div>
+        <div className="py-6 pl-2 flex flex-col gap-3"> {props.children}</div>
+      </div>
+    );
+  },
+  Item(props: PropsWithChildren<{ title: string; description: string }>) {
+    return (
+      <div className="relative">
+        <div className="group">
+          {props.title}
+          {/* https://www.kindacode.com/article/tailwind-css-how-to-create-tooltips/ */}
+          <div className="absolute hidden group-hover:flex -left-5 -top-2 -translate-y-full w-48 px-2 py-1 bg-gray-700 rounded-lg text-center text-white text-sm after:content-[''] after:absolute after:left-1/2 after:top-[100%] after:-translate-x-1/2 after:border-8 after:border-x-transparent after:border-b-transparent after:border-t-gray-700 z-50">
+            {props.description}
+          </div>
+        </div>
+        <div className='pl-5'> {props.children}</div>
+      </div>
+    );
+  },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+} satisfies Record<string, FC<any>>;
 
 export const StackedForm = {
   SubmitButton(

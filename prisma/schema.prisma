@@ -78,8 +78,8 @@ model Metric {
     sortOrder     Int
     journal       Journal      @relation(fields: [journalId], references: [id])
     journalId     Int          @map("themeId")
-    metricGroup   MetricGroup? @relation(fields: [metricGroupId], references: [id])
-    metricGroupId Int?
+    metricGroup   MetricGroup @relation(fields: [metricGroupId], references: [id])
+    metricGroupId Int
 }
 
 model MetricGroup {

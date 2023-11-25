@@ -1,10 +1,63 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import { addDays, compareAsc, startOfToday, subDays } from "date-fns";
 import { z } from "zod";
-import { MetricSchema, metricSchemas } from "~/lib/metricSchemas";
+import {
+  Metric,
+  MetricSchema,
+  MetricType,
+  metricSchemas,
+} from "~/lib/metricSchemas";
 import { v4 as uuidv4 } from "uuid";
+import { zeroToTen } from "~/components/metrics/zeroToTen";
 
 const prisma = new PrismaClient();
+
+const sampleValues: { [K in MetricType]: Metric<K>["value"][] } = {
+  checkbox: [
+    { value: false },
+    { value: false },
+    { value: false },
+    null,
+    null,
+    null,
+    { value: true },
+    { value: true },
+    { value: true },
+  ],
+  numeric: [
+    { value: 280 },
+    { value: 280 },
+    { value: 280 },
+    null,
+    null,
+    null,
+    { value: 280 },
+    { value: 280 },
+    { value: 280 },
+  ],
+  zeroToTen: [
+    { value: 0 },
+    { value: 2 },
+    { value: 10 },
+    null,
+    null,
+    null,
+    { value: 8 },
+    { value: 4 },
+    { value: 10 },
+  ],
+  richText: [
+    { ops: [{ insert: "Sample Text (1)" }] },
+    { ops: [{ insert: "Sample Text (2)" }] },
+    { ops: [{ insert: "Sample Text (3)" }] },
+    null,
+    null,
+    null,
+    { ops: [{ insert: "Sample Text (4)" }] },
+    { ops: [{ insert: "Sample Text (5)" }] },
+    { ops: [{ insert: "Sample Text (6)" }] },
+  ],
+};
 
 const sampleData: Array<{
   metricGroupName: string;
@@ -21,25 +74,15 @@ const sampleData: Array<{
     metricGroupDescription: "Morning Routine",
     metrics: [
       {
-        name: "Planned Day",
+        name: "Planned the Day",
         description:
           "Was able to sort through mail, calendar, todo lists, etc... and come up with some goals for the day",
         metricType: "checkbox",
         schema: {},
-        values: [
-          { value: false },
-          { value: false },
-          { value: false },
-          null,
-          null,
-          null,
-          { value: true },
-          { value: true },
-          { value: true },
-        ],
+        values: sampleValues.checkbox,
       },
       {
-        name: "Slow Morning",
+        name: "Enjoyed the Day",
         description: "Was able to relax in the morning and didn't have to rush",
         metricType: "zeroToTen",
         schema: {
@@ -57,35 +100,23 @@ const sampleData: Array<{
             "10 - HELL Yeah",
           ],
         },
-        values: [
-          { value: 0 },
-          { value: 2 },
-          { value: 10 },
-          null,
-          null,
-          null,
-          { value: 8 },
-          { value: 4 },
-          { value: 10 },
-        ],
+        values: sampleValues.zeroToTen,
       },
       {
-        name: "Journal",
+        name: "Siezed the Day",
+        description:
+          "Started the day off right by getting some early basic physical activity in",
+        metricType: "checkbox",
+        schema: {},
+        values: sampleValues.checkbox,
+      },
+      {
+        name: "Goals",
         description:
           "How did your morning go?  What are your plans for the day?",
         metricType: "richText",
         schema: {},
-        values: [
-          { ops: [{ insert: "Sample Text (1)" }] },
-          { ops: [{ insert: "Sample Text (2)" }] },
-          { ops: [{ insert: "Sample Text (3)" }] },
-          null,
-          null,
-          null,
-          { ops: [{ insert: "Sample Text (4)" }] },
-          { ops: [{ insert: "Sample Text (5)" }] },
-          { ops: [{ insert: "Sample Text (6)" }] },
-        ],
+        values: sampleValues.richText,
       },
     ],
   },
@@ -93,7 +124,135 @@ const sampleData: Array<{
     metricGroupName: "Evening",
     metricGroupDescription: "Evening routine",
     metrics: [
-      // TODO
+      {
+        name: "Productive",
+        description: "How much did you get done today?",
+        metricType: "zeroToTen",
+        schema: {
+          labels: [
+            "Absolutely nothing",
+            undefined,
+            "Technically a little bit",
+            undefined,
+            "A slow day",
+            undefined,
+            "A respectable amount",
+            undefined,
+            "An amount I'm proud of",
+            undefined,
+            "Best day ever",
+          ],
+        },
+        values: sampleValues.zeroToTen,
+      },
+      {
+        name: "Follow through",
+        description:
+          "Was what you got done the same thing as what you PLANNED to get done?",
+        metricType: "checkbox",
+        schema: {},
+        values: sampleValues.checkbox,
+      },
+      {
+        name: "Diet - no non-hungry eating",
+        description:
+          "Did you refrain from eating when you werent hungry?  (boredom, stress, etc...)",
+        metricType: "checkbox",
+        schema: {},
+        values: sampleValues.checkbox,
+      },
+      {
+        name: "Diet - no junk food",
+        description: "Did you refrain from eating excessive junk food?",
+        metricType: "checkbox",
+        schema: {},
+        values: sampleValues.checkbox,
+      },
+      {
+        name: "Diet - nutrition",
+        description:
+          "Did you get enough fiber / vitamins?  (did you eat at least one fruit or vegetable)",
+        metricType: "checkbox",
+        schema: {},
+        values: sampleValues.checkbox,
+      },
+      {
+        name: "Exercised",
+        description: "How much did you move today?",
+        metricType: "zeroToTen",
+        schema: {
+          labels: [
+            "Not at all",
+            undefined,
+            undefined,
+            "I at least got outdoors",
+            undefined,
+            undefined,
+            "Either a respectable amount of low-intensity, or at least one high-intensity thing",
+            undefined,
+            "A mix of low intensity and high intensity, got outdoors multiple times",
+            undefined,
+            "Enough to feel good and tired",
+          ],
+        },
+        values: sampleValues.zeroToTen,
+      },
+      {
+        name: "Mood",
+        description: "What was your general mood like today?",
+        metricType: "zeroToTen",
+        schema: {
+          labels: [
+            "Terrible",
+            undefined,
+            undefined,
+            "Bad",
+            undefined,
+            undefined,
+            "Okay",
+            undefined,
+            "Good",
+            undefined,
+            "Excellent",
+          ],
+        },
+        values: sampleValues.zeroToTen,
+      },
+      {
+        name: "Journal",
+        description: "How did your day go?",
+        metricType: "richText",
+        schema: {},
+        values: sampleValues.richText,
+      },
+      {
+        name: "Wind down",
+        description: "Did you get the chance to relax in the evening?",
+        metricType: "zeroToTen",
+        schema: {
+          labels: [
+            "Nope",
+            undefined,
+            undefined,
+            "I at least didn't go straight from a computer or TV to bed",
+            undefined,
+            undefined,
+            "I feel like I've had a slow evening",
+            undefined,
+            undefined,
+            undefined,
+            "Spent the evening on the porch (or similar)",
+          ],
+        },
+        values: sampleValues.zeroToTen,
+      },
+      {
+        name: "Brush teeth",
+        description: "Do it!",
+        metricType: "checkbox",
+        schema: {},
+        values: sampleValues.checkbox,
+      },
     ],
   },
   {
@@ -107,17 +266,7 @@ const sampleData: Array<{
         schema: {
           units: "lbs",
         },
-        values: [
-          { value: 280 },
-          { value: 280 },
-          { value: 280 },
-          null,
-          null,
-          null,
-          { value: 280 },
-          { value: 280 },
-          { value: 280 },
-        ],
+        values: sampleValues.numeric,
       },
     ],
   },
@@ -159,6 +308,9 @@ async function main() {
     },
   });
 
+  const metricGroupIds: number[] = [];
+  const metricIds: string[] = [];
+
   for (let dayIndex = 0; dayIndex < 10; dayIndex++) {
     const date = subDays(startOfToday(), 10 - dayIndex);
     const post =
@@ -191,6 +343,14 @@ async function main() {
             description: metricGroupData.metricGroupDescription,
           },
         }));
+      await prisma.metricGroup.update({
+        where: { id: metricGroup.id },
+        data: {
+          sortOrder: metricGroupData.index + 1,
+          description: metricGroupData.metricGroupDescription,
+        },
+      });
+      metricGroupIds.push(metricGroup.id);
 
       for (const metricData of metricGroupData.metrics.map((x, index) => ({
         ...x,
@@ -218,6 +378,21 @@ async function main() {
               sortOrder: metricData.index + 1,
             },
           }));
+        await prisma.metric.update({
+          where: { id: metric.id },
+          data: {
+            description: metricData.description,
+            type: "legacy_deprecated",
+            metricSchema: {
+              ...metricData.schema,
+              metricType: metricData.metricType,
+            } as MetricSchema,
+            journalId: journal.id, // deprecated
+            sortOrder: metricData.index + 1,
+          },
+        });
+
+        metricIds.push(metric.id);
 
         const metricValue = metricData.values[dayIndex] ?? null;
         if (metricValue !== null) {
@@ -242,6 +417,28 @@ async function main() {
       }
     }
   }
+
+  await prisma.value.deleteMany({
+    where: {
+      metricId: {
+        notIn: metricIds,
+      },
+    },
+  });
+  await prisma.metric.deleteMany({
+    where: {
+      id: {
+        notIn: metricIds
+      }
+    }
+  });
+  await prisma.metricGroup.deleteMany({
+    where: {
+      id: {
+        notIn: metricGroupIds,
+      },
+    },
+  });
 }
 
 main()

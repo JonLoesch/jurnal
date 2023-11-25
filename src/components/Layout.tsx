@@ -2,7 +2,11 @@ import React, {
   FC,
   Fragment,
   FunctionComponent,
+  MutableRefObject,
   PropsWithChildren,
+  createContext,
+  useEffect,
+  useRef,
 } from "react";
 import { Menu, Transition } from "@headlessui/react";
 import {
@@ -18,6 +22,7 @@ import { signIn, signOut, useSession } from "next-auth/react";
 import { ifElse } from "~/lib/ifElse";
 import { Locator, SafeLink } from "~/lib/urls";
 import { useApiConditions, useCondition } from "~/lib/watcher";
+import { useHoveredElement } from "~/lib/hoveredElement";
 
 function classNames(...classes: string[]) {
   return classes.filter(Boolean).join(" ");
@@ -191,6 +196,7 @@ const SmallLink: FC<Pages[0]> = (props) => {
     <div className="block border-l-4 border-transparent text-base font-medium text-gray-500 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-700"></div>
   );
 };
+
 const SmallLayout: FC<LayoutProps> = (props) => {
   const session = useSession();
   const c = useApiConditions();
@@ -198,10 +204,10 @@ const SmallLayout: FC<LayoutProps> = (props) => {
   const apiLoadingOverTwoSeconds = useCondition(c.apiLoadingOverTwoSeconds);
 
   return (
-    <div>
-      <Menu as="nav" className="bg-white shadow">
-        <div className="mx-auto max-w-7xl px-4">
-          <div className="flex h-16 justify-between items-center">
+    <div className="fixed inset-0 flex flex-col">
+      <Menu as="nav" className="shrink-0 bg-white shadow">
+        <div className="m-auto max-w-7xl px-4">
+          <div className="flex h-16 items-center justify-between">
             <div className="flex">
               <div className="flex flex-shrink-0">
                 <SafeLink page="index">
@@ -319,7 +325,7 @@ const SmallLayout: FC<LayoutProps> = (props) => {
           </div>
         </Menu.Items>
       </Menu>
-      {props.children}
+      <div className="shrink-1 overflow-y-auto">{props.children}</div>
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, MetricGroup, Metric } from "@prisma/client";
 import { AuthorizedContext } from "./AuthorizedContext";
 import { DeltaStatic } from "quill";
 import { AuthorizationError } from "./AuthorizationError";
@@ -78,10 +78,18 @@ export class PostModel extends Model<["journal", "post"]> {
         where: {
           journalId: this.journalId,
         },
-        orderBy: {
-          sortOrder: "asc",
-        },
+        orderBy: [
+          {
+            metricGroup: {
+              sortOrder: "asc",
+            },
+          },
+          {
+            sortOrder: "asc",
+          },
+        ],
         include: {
+          metricGroup: true,
           values: {
             where: {
               postId: this.postId,
@@ -90,17 +98,40 @@ export class PostModel extends Model<["journal", "post"]> {
         },
       })
       .then((r) =>
-        r.map(({ values, metricSchema, ...metric }) => {
-          const schemaAndValue = {
-            metricType: metricSchema.metricType,
-            value: values[0]?.metricValue ?? null,
-            schema: metricSchema,
-          } as MetricSchemaAndValue;
-          return {
-            ...metric,
-            ...schemaAndValue,
-          };
-        }),
+        r
+          .map(({ values, metricSchema, ...metric }) => {
+            const schemaAndValue = {
+              metricType: metricSchema.metricType,
+              value: values[0]?.metricValue ?? null,
+              schema: metricSchema,
+            } as MetricSchemaAndValue;
+            return {
+              ...metric,
+              ...schemaAndValue,
+            };
+          })
+          .reduce<
+            Record<
+              number,
+              MetricGroup & {
+                metrics: Array<
+                  Omit<Metric, "values" | "metricSchema"> & MetricSchemaAndValue
+                >;
+              }
+            >
+          >(
+            (acc, { metricGroup, ...metric }) => ({
+              ...acc,
+              [metricGroup.sortOrder]: {
+                ...metricGroup,
+                metrics: [
+                  ...(acc[metricGroup.sortOrder]?.metrics ?? []),
+                  metric,
+                ],
+              },
+            }),
+            {},
+          ),
       );
   }
 }

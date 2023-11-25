@@ -18,12 +18,6 @@ export const zeroToTen: MetricUI<"zeroToTen"> = {
         <>
           <div className="flex items-center">
             <div className="basis-full">
-              <label
-                htmlFor={`metric-${props.metricId}`}
-                className="mb-2 inline-block text-neutral-700 dark:text-neutral-200"
-              >
-                {props.name}
-              </label>
               <input
                 id={`metric-${props.metricId}`}
                 type="range"
@@ -60,7 +54,6 @@ export const zeroToTen: MetricUI<"zeroToTen"> = {
   View(props) {
     return (
       <div className="flex h-10 justify-between rounded-full">
-        <span>{props.name}:</span>
         <span
           style={{
             backgroundColor:

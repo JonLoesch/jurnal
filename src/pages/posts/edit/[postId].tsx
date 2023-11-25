@@ -10,6 +10,7 @@ import {
 } from "react";
 import {
   FullPage,
+  Groups,
   Header,
   MainSection,
   StackedForm,
@@ -74,7 +75,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
   }));
 
   const editPost = api.posts.edit.useMutation();
-  
+
   return (
     <JournalScopeLayout journalId={props._auth.journal.id}>
       <FullPage key={props.post.id}>
@@ -123,56 +124,59 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
           </Subtitle>
         </Header>
         <MainSection>
-          {/* <StackedForm.Main
-            onSubmit={() => {
-              const postJson = getQuillData(editorRef);
-              void editPost
-                .mutateAsync({
-                  postId: props.post.id,
-                  postJson: postJson.full,
-                  firstLine: postJson.firstLine,
-                  values: Object.fromEntries(
-                    values.map((v) => [v.id, v.value]),
-                  ),
-                })
-                .then(() => setDirty(false));
-            }}
-          > */}
-          <StackedForm.Section
-            title="Journal"
-            description="How did your day go?"
-          >
-            <StackedForm.SectionItem>
-              <div key={props.post.id}>
-                {/* <WYSIWYG
-                  editorRef={editorRef}
-                  editable={props._auth.journal.write}
-                  defaultValue={props.post.quillData}
-                  onChange={() => {
-                    setDirty(true);
-                  }}
-                /> */}
-              </div>
-            </StackedForm.SectionItem>
+          <Groups.GroupSection>
+            {Object.values(props.metricValues).map((metricGroup) => (
+              <Groups.Group
+                title={metricGroup.name}
+                description={metricGroup.description}
+                key={metricGroup.id}
+              >
+                {metricGroup.metrics.map((metric) => (
+                  <Groups.Item
+                    title={metric.name}
+                    description={metric.description}
+                    key={metric.id}
+                  >
 
-            {props.metricValues.map((mv) => (
-              <StackedForm.SectionItem key={mv.id}>
-                <GenericMetric
-                  edittable={props._auth.post.write}
-                  {...mv}
-                  metricId={mv.id}
-                  postId={props.post.id}
-                />
-              </StackedForm.SectionItem>
+                  <GenericMetric
+                    edittable={props._auth.post.write}
+                    {...metric}
+                    metricId={metric.id}
+                    postId={props.post.id}
+                  />
+                  </Groups.Item>
+                ))}
+              </Groups.Group>
             ))}
-          </StackedForm.Section>
-          <StackedForm.ButtonPanel>
-            <StackedForm.SubmitButton disabled={!dirty} label="Save">
-              {editPost.isLoading && <CursorArrowRaysIcon className="w-8" />}
-              {editPost.isSuccess && <CheckIcon className="w-8" />}
-            </StackedForm.SubmitButton>
-          </StackedForm.ButtonPanel>
-          {/* </StackedForm.Main> */}
+          </Groups.GroupSection>
+          <div> Lorem Ipsum</div>
+          <div> Lorem Ipsum</div>
+          <div> Lorem Ipsum</div>
+          <div> Lorem Ipsum</div>
+          <div> Lorem Ipsum</div>
+          <div> Lorem Ipsum</div>
+          <div> Lorem Ipsum</div>
+          <div> Lorem Ipsum</div>
+          <div> Lorem Ipsum</div>
+          <div> Lorem Ipsum</div>
+          <div> Lorem Ipsum</div>
+          <div> Lorem Ipsum</div>
+          <div> Lorem Ipsum</div>
+          <div> Lorem Ipsum</div>
+          <div> Lorem Ipsum</div>
+          <div> Lorem Ipsum</div>
+          <div> Lorem Ipsum</div>
+          <div> Lorem Ipsum</div>
+          <div> Lorem Ipsum</div>
+          <div> Lorem Ipsum</div>
+          <div> Lorem Ipsum</div>
+          <div> Lorem Ipsum</div>
+          <div> Lorem Ipsum</div>
+          <div> Lorem Ipsum</div>
+          {/* {props.metricValues.map((mv) => (
+              <StackedForm.SectionItem key={mv.id}>
+              </StackedForm.SectionItem>
+            ))} */}
         </MainSection>
       </FullPage>
     </JournalScopeLayout>
