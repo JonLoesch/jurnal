@@ -13,6 +13,11 @@
   .tooltip:before {
     z-index: 50;
   }
+  .navbar {
+    .dropdown-bottom .menu.dropdown-content {
+      @apply rounded-box z-30 mt-3  bg-base-200 p-2 shadow;
+    }
+  }
 }
 
 #app {

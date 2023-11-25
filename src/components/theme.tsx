@@ -41,7 +41,7 @@ export const Groups = {
   },
   Group(props: PropsWithChildren<{ title: string; description: string }>) {
     return (
-      <div className="grid grid-cols-[250px_1fr] gap-y-3 border-l-2 border-neutral bg-base-200 py-3">
+      <div className="grid grid-cols-[250px_1fr] gap-y-3 border-l-2 border-neutral bg-base-300 py-3">
         <div className="sticky -top-1 z-10 col-span-2 bg-neutral text-neutral-content py-2 text-lg opacity-100 pl-2">
           {props.title}
         </div>
@@ -58,7 +58,7 @@ export const Groups = {
         <div className="group p-2 pl-4 col-span-2  md:col-span-1 md:py-5 tooltip tooltip-bottom md:tooltip-right text-left h-auto" data-tip={props.description}>
           {props.title}
         </div>
-        <div className="pl-7 col-span-2 md:col-span-1 md:pl-0 md:py-5"> {props.children}</div>
+        <div className="pl-7 col-span-2 md:col-span-1 md:pl-0 md:py-5 pr-3 md:pr-6"> {props.children}</div>
       </>
     );
   },

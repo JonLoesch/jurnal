@@ -149,34 +149,6 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
               </Groups.Group>
             ))}
           </Groups.GroupSection>
-          <div> Lorem Ipsum</div>
-          <div> Lorem Ipsum</div>
-          <div> Lorem Ipsum</div>
-          <div> Lorem Ipsum</div>
-          <div> Lorem Ipsum</div>
-          <div> Lorem Ipsum</div>
-          <div> Lorem Ipsum</div>
-          <div> Lorem Ipsum</div>
-          <div> Lorem Ipsum</div>
-          <div> Lorem Ipsum</div>
-          <div> Lorem Ipsum</div>
-          <div> Lorem Ipsum</div>
-          <div> Lorem Ipsum</div>
-          <div> Lorem Ipsum</div>
-          <div> Lorem Ipsum</div>
-          <div> Lorem Ipsum</div>
-          <div> Lorem Ipsum</div>
-          <div> Lorem Ipsum</div>
-          <div> Lorem Ipsum</div>
-          <div> Lorem Ipsum</div>
-          <div> Lorem Ipsum</div>
-          <div> Lorem Ipsum</div>
-          <div> Lorem Ipsum</div>
-          <div> Lorem Ipsum</div>
-          {/* {props.metricValues.map((mv) => (
-              <StackedForm.SectionItem key={mv.id}>
-              </StackedForm.SectionItem>
-            ))} */}
         </MainSection>
       </FullPage>
     </JournalScopeLayout>

@@ -86,7 +86,7 @@ const UserWidget: FC<Pick<LayoutProps, "userMenuPages">> = (props) => {
     );
   }
   return (
-    <div className="dropdown dropdown-end">
+    <div className="dropdown dropdown-end dropdown-bottom">
       <label tabIndex={0} className="btn btn-ghost flex flex-row">
         {ifElse(
           session.data.user.image,
@@ -145,15 +145,15 @@ const Alert = () => {
 const Layout: FC<LayoutProps> = (props) => {
   return (
     <div className="fixed inset-0 flex flex-col">
-      <div className="navbar flex-none bg-base-100">
+      <div className="navbar flex-none bg-base-100 ">
         <div className="navbar-start">
-          <div className="dropdown md:hidden">
+          <div className="dropdown dropdown-bottom md:hidden">
             <label tabIndex={0} className="btn btn-ghost md:hidden">
               <Bars3Icon className="h-5 w-5" />
             </label>
             <ul
               tabIndex={0}
-              className="menu dropdown-content rounded-box menu-sm z-[1] mt-3 w-52 bg-base-100 p-2 shadow"
+              className="menu dropdown-content menu-sm w-52"
             >
               <li>
                 <SafeLink page="index">Home page</SafeLink>
