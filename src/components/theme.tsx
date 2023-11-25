@@ -41,27 +41,26 @@ export const Groups = {
   },
   Group(props: PropsWithChildren<{ title: string; description: string }>) {
     return (
-      <div className="border-l-2 border-black pl-2 bg-gray-200 py-3 pr-5">
-        <div className="sticky -top-1 py-2 text-lg opacity-100 bg-gray-200 z-10">
+      <div className="grid grid-cols-[250px_1fr] gap-y-3 border-l-2 border-black bg-gray-200 py-3 pl-2 pr-5">
+        <div className="sticky -top-1 z-10 col-span-2 bg-gray-200 py-2 text-lg opacity-100">
           {props.title}
         </div>
-        <div className="text-gray-400 px-5"> {props.description}</div>
-        <div className="py-6 pl-2 flex flex-col gap-3"> {props.children}</div>
+        <div className="col-span-2 px-5 text-gray-400">
+          {" "}
+          {props.description}
+        </div>
+        {props.children}
       </div>
     );
   },
   Item(props: PropsWithChildren<{ title: string; description: string }>) {
     return (
-      <div className="relative">
-        <div className="group">
+      <>
+        <div className="group p-2 col-span-2  md:col-span-1 md:py-5 tooltip tooltip-bottom md:tooltip-right text-left h-auto" data-tip={props.description}>
           {props.title}
-          {/* https://www.kindacode.com/article/tailwind-css-how-to-create-tooltips/ */}
-          <div className="absolute hidden group-hover:flex -left-5 -top-2 -translate-y-full w-48 px-2 py-1 bg-gray-700 rounded-lg text-center text-white text-sm after:content-[''] after:absolute after:left-1/2 after:top-[100%] after:-translate-x-1/2 after:border-8 after:border-x-transparent after:border-b-transparent after:border-t-gray-700 z-50">
-            {props.description}
-          </div>
         </div>
-        <div className='pl-5'> {props.children}</div>
-      </div>
+        <div className="pl-7 col-span-2 md:col-span-1 md:pl-0 md:py-5"> {props.children}</div>
+      </>
     );
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

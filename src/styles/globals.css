@@ -10,6 +10,9 @@
   body {
     @apply bg-white;
   }
+  .tooltip:before {
+    z-index: 50;
+  }
 }
 
 #app {
