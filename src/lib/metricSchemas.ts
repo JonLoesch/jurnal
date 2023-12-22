@@ -60,7 +60,7 @@ const schemas = {
   }),
   zeroToTen: scalarSchema({
     schema: z.object({
-      labels: z.string().optional().array().max(11),
+      labels: z.string().nullable().array().max(11),
     }),
     value: z.number().int().min(0).max(10),
   }),

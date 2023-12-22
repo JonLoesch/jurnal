@@ -7,10 +7,16 @@
 */
 -- AlterTable
 ALTER TABLE "Metric" ADD COLUMN     "metricGroupId" INTEGER,
-ADD COLUMN     "metricSchema" JSONB NOT NULL;
+ADD COLUMN     "metricSchema" JSONB;
+-- Manual fill:
+UPDATE "Metric" SET     "metricSchema" = '{"labels":[null,null,null,null,null,null,null,null,null,null,null],"metricType":"zeroToTen"}';
+ALTER TABLE "Metric" ALTER COLUMN     "metricSchema" SET NOT NULL;
 
 -- AlterTable
-ALTER TABLE "Value" ADD COLUMN     "metricValue" JSONB NOT NULL;
+ALTER TABLE "Value" ADD COLUMN     "metricValue" JSONB ;
+-- Manual fill:
+UPDATE "Value" SET  "metricValue" = CONCAT('{"value":', "value", '}')::jsonb;
+ALTER TABLE "Value" ALTER COLUMN     "metricValue" SET NOT NULL;
 
 -- CreateTable
 CREATE TABLE "MetricGroup" (
@@ -21,7 +27,6 @@ CREATE TABLE "MetricGroup" (
 
     CONSTRAINT "MetricGroup_pkey" PRIMARY KEY ("id")
 );
-
 -- AddForeignKey
 ALTER TABLE "Metric" ADD CONSTRAINT "Metric_metricGroupId_fkey" FOREIGN KEY ("metricGroupId") REFERENCES "MetricGroup"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
