@@ -125,29 +125,35 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
         </Header>
         <MainSection>
           <Groups.GroupSection>
-            {Object.values(props.metricValues).map((metricGroup) => (
-              <Groups.Group
-                title={metricGroup.name}
-                description={metricGroup.description}
-                key={metricGroup.id}
-              >
-                {metricGroup.metrics.map((metric) => (
-                  <Groups.Item
-                    title={metric.name}
-                    description={metric.description}
-                    key={metric.id}
+            {Object.values(props.metricValues).map(
+              (metricGroup) =>
+                (props._auth.post.write ||
+                  metricGroup.metrics.some((x) => x.value !== null)) && (
+                  <Groups.Group
+                    title={metricGroup.name}
+                    description={metricGroup.description}
+                    key={metricGroup.id}
                   >
-
-                  <GenericMetric
-                    edittable={props._auth.post.write}
-                    {...metric}
-                    metricId={metric.id}
-                    postId={props.post.id}
-                  />
-                  </Groups.Item>
-                ))}
-              </Groups.Group>
-            ))}
+                    {metricGroup.metrics.map(
+                      (metric) =>
+                        (props._auth.post.write || metric.value !== null) && (
+                          <Groups.Item
+                            title={metric.name}
+                            description={metric.description}
+                            key={metric.id}
+                          >
+                            <GenericMetric
+                              edittable={props._auth.post.write}
+                              {...metric}
+                              metricId={metric.id}
+                              postId={props.post.id}
+                            />
+                          </Groups.Item>
+                        ),
+                    )}
+                  </Groups.Group>
+                ),
+            )}
           </Groups.GroupSection>
         </MainSection>
       </FullPage>
