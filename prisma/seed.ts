@@ -378,7 +378,6 @@ async function main() {
               sortOrder: metricData.index + 1,
             },
           }));
-        console.log(metric.id, metricData.schema, metricData.metricType);
         await prisma.metric.update({
           where: { id: metric.id },
           data: {

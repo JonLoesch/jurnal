@@ -1,8 +1,6 @@
 import { BookOpenIcon } from "@heroicons/react/24/solid";
 import { format, formatISO, getUnixTime } from "date-fns";
-import {
-  InferGetServerSidePropsType,
-} from "next";
+import { InferGetServerSidePropsType } from "next";
 import { FC } from "react";
 import { api } from "~/utils/api";
 import { useRouter } from "next/router";
@@ -15,11 +13,15 @@ import { RelativeToRoot, SafeLink, fromUrl } from "~/lib/urls";
 import { withAuth } from "~/model/Authorization";
 import { JournalModel } from "~/model/JournalModel";
 
-export const getServerSideProps = withAuth(fromUrl.journalId, (auth, params) => auth.journal(params.journalId, async context => ({
-  posts: await new JournalModel(context).posts(),
-})));
+export const getServerSideProps = withAuth(fromUrl.journalId, (auth, params) =>
+  auth.journal(params.journalId, async (context) => ({
+    posts: await new JournalModel(context).posts(),
+  })),
+);
 
-const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (props) => {
+const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
+  props,
+) => {
   const addPost = api.posts.create.useMutation();
   const router = useRouter();
 
@@ -41,9 +43,30 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (props)
     <JournalScopeLayout journalId={props._auth.journal.id}>
       <FullPage>
         <Header>
-          <Title>Timeline</Title>
+          <Title>
+            <div className="justify-between flex align-middle">
+              <span>Timeline</span>
+
+              {props._auth.journal.write && (
+                <div className="inline-block justify-end">
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => {
+                      addPost.mutate({
+                        journalId: props._auth.journal.id,
+                        date: Zoneless.fromDate(new Date()),
+                      });
+                    }}
+                  >
+                    New Post
+                  </button>
+                </div>
+              )}
+            </div>
+          </Title>
         </Header>
         <MainSection>
+
           <ul role="list" className="-mb-8">
             {props.posts.map((post, index) => {
               const date = Zoneless.toDate(post.date);
@@ -110,22 +133,6 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (props)
               );
             })}
           </ul>
-
-          {props._auth.journal.write && (
-            <div className="mt-16 flex justify-end">
-              <button
-                className="btn btn-primary"
-                onClick={() => {
-                  addPost.mutate({
-                    journalId: props._auth.journal.id,
-                    date: Zoneless.fromDate(new Date()),
-                  });
-                }}
-              >
-                New Post
-              </button>
-            </div>
-          )}
         </MainSection>
       </FullPage>
     </JournalScopeLayout>
