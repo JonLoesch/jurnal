@@ -1,185 +1,152 @@
-import {
-  DndContext,
-  DragEndEvent,
-  DragOverlay,
-  DragStartEvent,
-  closestCenter,
-  useDraggable,
-} from "@dnd-kit/core";
-import { FC, PropsWithChildren, useReducer, useState } from "react";
+import { DndContext, useDroppable } from "@dnd-kit/core";
+import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import {
-  SortableContext,
-  arrayMove,
-  rectSwappingStrategy,
-  useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
+import { Prisma, PrismaClient } from "@prisma/client";
 import { produce } from "immer";
+import { FC, useState } from "react";
 
-type MG = {
-  name: string;
-  metrics: M[];
-};
-type M = {
-  name: string;
-  id: number;
-};
+type MetricGroup = Prisma.MetricGroupGetPayload<{ include: { metrics: true } }>;
+type Metric = MetricGroup["metrics"][number];
 
-let autoInc = 0;
-
-const initial: MG[] = [
-  {
-    name: "Morning",
-    metrics: [
-      { name: "Slept well", id: autoInc++ },
-      { name: "Logistically organized / planned", id: autoInc++ },
-      { name: "Physically tidied", id: autoInc++ },
-      { name: "Kept up to date with (e-)mail", id: autoInc++ },
-    ],
-  },
-  {
-    name: "Night",
-    metrics: [
-      { name: "Brushed Teeth", id: autoInc++ },
-      { name: "Socially active", id: autoInc++ },
-      { name: "Was Productive", id: autoInc++ },
-      { name: "Ate Well", id: autoInc++ },
-      { name: "Excersized", id: autoInc++ },
-      { name: "Had a good 30 minutes of no-screen-time before bed", id: autoInc++ },
-      { name: "General Mood", id: autoInc++ },
-    ],
-  },
-];
-
-console.log(initial);
-
-const MySortItem: FC<PropsWithChildren<{ id: string }>> = (props) => {
-  const { setNodeRef, listeners, transform, transition } = useSortable({
-    id: props.id,
-  });
-
+export const MetricGroupEditor: FC<{ metricGroups: MetricGroup[] }> = (
+  props,
+) => {
+  const [state, setState] = useState(props.metricGroups);
+  const [dragStartState, setDragStartState] = useState<typeof state | null>(
+    null,
+  );
   return (
-    <div
-      ref={setNodeRef}
-      {...listeners}
-      style={{ transform: CSS.Translate.toString(transform), transition }}
-      className="cursor-grab active:cursor-grabbing"
+    <DndContext
+      onDragStart={({ active }) => {
+        setDragStartState(state);
+      }}
+      onDragCancel={() => {
+        setState((s) => dragStartState ?? s);
+        setDragStartState(null);
+      }}
+      onDragEnd={(e) => {
+        setState(
+          produce((draft) => {
+            if (e.over === null) return;
+            const active = getInfo(draft, e.active.id as string);
+            const over = getInfo(draft, e.over.id as string);
+            if (
+              active?.type === "metric" &&
+              over?.type === "metric" &&
+              active.metricGroup.id === over.metricGroup.id
+            ) {
+              active.metricGroup.metrics.splice(
+                over.metricIndex,
+                0,
+                ...active.metricGroup.metrics.splice(active.metricIndex, 1),
+              );
+            }
+          }),
+        );
+      }}
+      onDragOver={(e) => {
+        if (e.over === null) {
+          setState((s) => dragStartState ?? s);
+        } else {
+          setState(
+            produce((draft) => {
+              if (e.over === null) return;
+              const active = getInfo(draft, e.active.id as string);
+              const over = getInfo(draft, e.over.id as string);
+              if (
+                active?.type === "metric" &&
+                over !== null &&
+                active.metricGroup.id !== over.metricGroup.id
+              ) {
+                active.metricGroup.metrics.splice(active.metricIndex, 1);
+                if (over.type === "metric_group") {
+                  over.metricGroup.metrics.push(active.metric);
+                } else {
+                  over.metricGroup.metrics.splice(
+                    over.metricIndex,
+                    0,
+                    active.metric,
+                  );
+                }
+              }
+            }),
+          );
+        }
+      }}
     >
-      {props.children}
+      {state.map((metricGroup) => (
+        <MetricGroup {...metricGroup} key={metricGroup.id} />
+      ))}
+    </DndContext>
+  );
+};
+
+const MetricGroup: FC<MetricGroup> = props => {
+  const { setNodeRef } = useDroppable({ id: dragAndDropIdentifier.metricGroup(props) });
+  return (
+    <div className="border-2 my-8" ref={setNodeRef}>
+      <div className="border-b-2">{props.name}</div>
+      <SortableContext
+        items={props.metrics.map(dragAndDropIdentifier.metric)}
+        strategy={verticalListSortingStrategy}
+      >
+        {props.metrics.map((m) => (
+          <Metric {...m} key={m.id} />
+        ))}
+      </SortableContext>
+    </div>
+  );
+}
+
+const Metric: FC<Metric> = (props) => {
+  const { setNodeRef, listeners, attributes, transform, transition } =
+    useSortable({
+      id: dragAndDropIdentifier.metric(props),
+    });
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    transition,
+  };
+  return (
+    <div ref={setNodeRef} {...listeners} {...attributes} style={style}>
+      {props.name}
     </div>
   );
 };
 
-const MyMetric: FC<{ metric: M }> = (props) => {
-  return <div>{props.metric.name}</div>;
+const dragAndDropIdentifier = {
+  metricGroup(this: void, mg: MetricGroup) {
+    return `metric_group ${mg.id}`;
+  },
+  metric(this: void, m: Metric) {
+    return `metric ${m.id}`;
+  },
 };
 
-const DndMetricGroup: FC<{ id: string; metricGroup: MG }> = (props) => {
-  return (
-    <SortableContext
-      items={props.metricGroup.metrics.map((m) => `${props.id}.${m.name}`)}
-      // strategy={verticalListSortingStrategy}
-    >
-      <div className="border-2 border-gray-400 p-3">
-        <div className="text-xl font-semibold">{props.metricGroup.name}</div>
-
-        {props.metricGroup.metrics.map((m) => (
-          <MySortItem id={`${props.id}.${m.name}`} key={m.name}>
-            <MyMetric metric={m} />
-          </MySortItem>
-        ))}
-      </div>
-    </SortableContext>
-  );
-};
-
-function useSimpleReducer<T, A>(
-  dispatch: (prev: T, action: A) => T,
-  initial: T,
-) {
-  return useReducer(dispatch, initial);
+function getInfo(groups: MetricGroup[], dndID: string) {
+  for (const metricGroup of groups) {
+    if (dragAndDropIdentifier.metricGroup(metricGroup) === dndID) {
+      return {
+        type: "metric_group" as const,
+        metricGroup,
+      };
+    }
+    for (
+      let metricIndex = 0;
+      metricIndex < metricGroup.metrics.length;
+      metricIndex++
+    ) {
+      const metric = metricGroup.metrics[metricIndex]!;
+      if (dragAndDropIdentifier.metric(metric) === dndID) {
+        return {
+          type: "metric" as const,
+          metricIndex,
+          metric,
+          metricGroup,
+        };
+      }
+    }
+  }
+  return null;
 }
-
-export const MetricGroupEditor: FC = () => {
-  const [state, setState] = useState(initial);
-  const [[mgName, mName], setActive] = useSimpleReducer<
-    [string, string] | [null, null],
-    string | null
-  >(
-    (_, action) => {
-      if (action === null) return [null, null];
-      return splitId(action);
-    },
-    [null, null],
-  );
-
-  function splitId(id: string): [string, string] {
-    const [mg, m] = id.split(".");
-    if (mg == null) throw new Error();
-    if (m == null) throw new Error();
-    return [mg, m];
-  }
-
-  return (
-    <DndContext
-      onDragEnd={handleDragEnd}
-      collisionDetection={closestCenter}
-      onDragStart={handleDragStart}
-    >
-      <div className="flex flex-col gap-12">
-        {state.map((mg) => (
-          <DndMetricGroup key={mg.name} id={mg.name} metricGroup={mg} />
-        ))}
-      </div>
-      {/* <DragOverlay>
-        {mgName !== null && (
-          <MyMetric
-            metric={
-              state
-                .find((x) => x.name === mgName)!
-                .metrics.find((x) => x.name === mName)!
-            }
-          />
-        )}
-      </DragOverlay> */}
-    </DndContext>
-  );
-
-  function handleDragStart(event: DragStartEvent) {
-    if (typeof event.active.id === "number") {
-      throw new Error();
-    }
-    // setActive(event.active.id);
-  }
-
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    if (typeof event.active.id === "number") {
-      throw new Error();
-    }
-    if (typeof event.over?.id !== "string") {
-      throw new Error();
-    }
-    const [fromMG, fromM] = splitId(event.active.id);
-    const [toMG, toM] = splitId(event.over.id);
-    if (fromMG === toMG) {
-      setState(produce(x => {
-        const mg = x.find(_ => _.name === fromMG)!;
-        const oldIndex = mg.metrics.findIndex(_ => _.name === fromM);
-        const newIndex = mg.metrics.findIndex(_ => _.name === toM);
-        mg.metrics = arrayMove(mg.metrics, oldIndex, newIndex);
-      }))
-    } else {
-
-      setState(produce(x => {
-        const from = x.find(_ => _.name === fromMG)!.metrics;
-        const to = x.find(_ => _.name === toMG)!.metrics;
-        const removed = from.splice(from.findIndex(_ => _.name === fromM), 1)[0]!;
-        to.splice(0, 0, removed);
-      }))
-    }
-    console.log(active, over);
-    setActive(null);
-  }
-};

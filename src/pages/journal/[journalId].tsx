@@ -21,14 +21,20 @@ import { fromUrl } from "~/lib/urls";
 import { MetricGroupEditor } from "~/components/MetricGroupEditor";
 import { JournalModel } from "~/model/JournalModel";
 
-export const getServerSideProps = withAuth(fromUrl.journalId,
-  (auth, params) =>
-    auth.journal(params.journalId, async (context) => ({
-      journal: await new JournalModel(context).obj({
-        subscriptions: {
-          where: {
-            userId: auth.session?.user.id ?? "no_one",
+export const getServerSideProps = withAuth(fromUrl.journalId, (auth, params) =>
+  auth.journal(params.journalId, async (context) => ({
+    journal: await new JournalModel(context).obj({
+      metricGroups: {
+        orderBy: { sortOrder: "asc" },
+        include: {
+          metrics: {
+            orderBy: { sortOrder: "asc" },
           },
+        },
+      },
+      subscriptions: {
+        where: {
+          userId: auth.session?.user.id ?? "no_one",
         },
       },
     }),
@@ -89,7 +95,8 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
             </StackedForm.Section>
             <StackedForm.Section title="Template">
               <StackedForm.SectionItem>
-                <MetricGroupEditor />
+                {/* <ASDF/> */}
+                <MetricGroupEditor metricGroups={props.journal.metricGroups} />
               </StackedForm.SectionItem>
             </StackedForm.Section>
             <StackedForm.Section title="Notifications">
