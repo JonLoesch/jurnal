@@ -7,14 +7,14 @@ import { sendEmail } from "~/lib/email";
 import { db } from "~/server/db";
 
 export default cronjob(async () => {
-  for (const post of await db.entry.findMany({
+  for (const post of await db.post.findMany({
     where: {
       date: startOfDay(subDays(new Date(), 1)),
     },
     include: {
-      theme: {
+      journal: {
         include: {
-          themeSubscription: {
+          subscriptions: {
             include: {
               user: true,
             },
@@ -25,7 +25,7 @@ export default cronjob(async () => {
     },
   })) {
     const react = <NewPost post={post} />;
-    for (const sub of post.theme.themeSubscription) {
+    for (const sub of post.journal.subscriptions) {
       if (sub.user.email !== null) {
         await sendEmail({
           to: sub.user.email,

@@ -1,4 +1,5 @@
-import { FC, Fragment, PropsWithChildren } from "react";
+import { FC, Fragment, PropsWithChildren, useRef } from "react";
+import { useTooltipWatch } from "~/lib/hoveredElement";
 import { ifElse } from "~/lib/ifElse";
 import { Locator, SafeLink } from "~/lib/urls";
 
@@ -18,11 +19,9 @@ export const Title: FC<PropsWithChildren> = (props) => {
     </h1>
   );
 };
-export const Subtitle : FC<PropsWithChildren> = props => {
-  return <div className="mx-0 sm:mx-4 lg:mx-10">
-    {props.children}
-  </div>
-}
+export const Subtitle: FC<PropsWithChildren> = (props) => {
+  return <div className="mx-0 sm:mx-4 lg:mx-10">{props.children}</div>;
+};
 export const MainSection: FC<PropsWithChildren> = (props) => {
   return (
     <main>
@@ -35,6 +34,36 @@ export const MainSection: FC<PropsWithChildren> = (props) => {
 export const FullPage: FC<PropsWithChildren> = (props) => {
   return <div className="py-10"> {props.children}</div>;
 };
+
+export const Groups = {
+  GroupSection(props: PropsWithChildren) {
+    return <div className="flex flex-col gap-3">{props.children}</div>;
+  },
+  Group(props: PropsWithChildren<{ title: string; description: string }>) {
+    return (
+      <div className="grid grid-cols-[250px_1fr] gap-y-3 border-l-2 border-neutral bg-base-300 py-3">
+        <div className="sticky -top-1 z-10 col-span-2 bg-neutral text-neutral-content py-2 text-lg opacity-100 pl-2">
+          {props.title}
+        </div>
+        <div className="col-span-2 pl-7 text-gray-400">
+          {props.description}
+        </div>
+        {props.children}
+      </div>
+    );
+  },
+  Item(props: PropsWithChildren<{ title: string; description: string }>) {
+    return (
+      <>
+        <div className="group p-2 pl-4 col-span-2  md:col-span-1 md:py-5 tooltip tooltip-bottom md:tooltip-right text-left h-auto" data-tip={props.description}>
+          {props.title}
+        </div>
+        <div className="pl-7 col-span-2 md:col-span-1 md:pl-0 md:py-5 pr-3 md:pr-6"> {props.children}</div>
+      </>
+    );
+  },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+} satisfies Record<string, FC<any>>;
 
 export const StackedForm = {
   SubmitButton(

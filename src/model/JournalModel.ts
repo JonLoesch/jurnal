@@ -4,13 +4,28 @@ import { AuthorizedContext } from "./AuthorizedContext";
 import { Zoneless, ZonelessDate } from "~/lib/ZonelessDate";
 import { DeltaStatic } from "quill";
 import { AuthorizationError } from "./AuthorizationError";
+import { Model } from "./Model";
 
-export class ThemeModel {
-  constructor(protected readonly context: AuthorizedContext<"theme">) {}
+export class JournalModel extends Model<["journal"]> {
+  protected authChecks(): {
+    scopes: readonly ["journal"];
+    read: true;
+    write: boolean;
+  } {
+    return {
+      scopes: ["journal"],
+      read: true,
+      write: false,
+    };
+  }
 
-  obj<Include extends Prisma.ThemeInclude>(include: Include) {
-    return this.context.prisma.theme.findUniqueOrThrow({
-      where: { id: this.context.theme.id },
+  protected get journalId() {
+    return this._auth.journal.id;
+  }
+
+  obj<Include extends Prisma.JournalInclude>(include: Include) {
+    return this.prisma.journal.findUniqueOrThrow({
+      where: { id: this.journalId },
       include,
     });
   }
@@ -19,12 +34,12 @@ export class ThemeModel {
     return db.metric
       .findMany({
         where: {
-          themeId: this.context.theme.id,
+          journalId: this.journalId,
         },
         include: {
           values: {
             orderBy: {
-              entry: {
+              post: {
                 date: "desc",
               },
             },
@@ -43,12 +58,12 @@ export class ThemeModel {
       );
   }
 
-  entries() {
-    return db.entry
+  posts() {
+    return db.post
       .findMany({
         orderBy: [{ date: "desc" }, { id: "desc" }],
         where: {
-          themeId: this.context.theme.id,
+          journalId: this.journalId,
         },
       })
       .then((result) =>
@@ -60,19 +75,19 @@ export class ThemeModel {
   }
 
   async subscribe(setSubscribe: boolean) {
-    const userId = this.context.session?.user.id;
+    const userId = this.session?.user.id;
     if (userId == null) {
       throw new AuthorizationError();
     }
     const subscription = {
-      themeId: this.context.theme.id,
+      journalId: this.journalId,
       userId,
     };
 
     if (setSubscribe) {
       await db.themeSubscription.upsert({
         where: {
-          themeId_userId: subscription,
+          journalId_userId: subscription,
         },
         create: subscription,
         update: {},
@@ -80,18 +95,35 @@ export class ThemeModel {
     } else {
       await db.themeSubscription.delete({
         where: {
-          themeId_userId: subscription,
+          journalId_userId: subscription,
         },
       });
     }
   }
-
 }
 
-export class ThemeModelWithWritePermissions extends ThemeModel {
-  async editTheme(description: string | null, quill: DeltaStatic | null) {
-    await this.context.prisma.theme.update({
-      where: { id: this.context.theme.id },
+export class JournalModelWithWritePermissions extends JournalModel {
+  protected authChecks(): {
+    scopes: readonly ["journal"];
+    read: true;
+    write: boolean;
+  } {
+    return {
+      ...super.authChecks(),
+      write: true,
+    };
+  }
+
+  constructor(context: AuthorizedContext<["journal"]>) {
+    super(context);
+    if (!context._auth.journal.write) {
+      throw new AuthorizationError();
+    }
+  }
+
+  async editJournal(description: string | null, quill: DeltaStatic | null) {
+    await this.prisma.journal.update({
+      where: { id: this.journalId },
       data: {
         quill: quill ?? undefined,
         description: description ?? undefined,
@@ -100,11 +132,11 @@ export class ThemeModelWithWritePermissions extends ThemeModel {
   }
 
   async newPost(date: ZonelessDate) {
-    return this.context.prisma.entry.create({
+    return this.prisma.post.create({
       data: {
-        themeId: this.context.theme.id,
+        journalId: this.journalId,
         date: Zoneless.toDate(date),
       },
-    })
+    });
   }
 }

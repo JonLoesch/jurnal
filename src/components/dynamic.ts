@@ -10,3 +10,7 @@ export const WYSIWYG = dynamic(
 export const LineChart = dynamic(() => import("recharts").then((x) => x.LineChart), {
   ssr: false,
 });
+
+export const ReactJsonDebugView = dynamic(() => import("react-json-view"), {
+  ssr: false,
+});

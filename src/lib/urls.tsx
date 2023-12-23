@@ -14,31 +14,31 @@ export type Locator =
     }
   | {
       page: "viewPost";
-      postid: number;
+      postId: number;
     }
   | {
       page: "editPost";
-      postid: number;
+      postId: number;
     }
   | {
       page: "viewTimeline";
-      themeid: number;
+      journalId: number;
     }
   | {
       page: "viewMetrics";
-      themeid: number;
+      journalId: number;
     }
   | {
       page: "viewJournal";
-      themeid: number;
+      journalId: number;
     }
   | {
       page: "editJournal";
-      themeid: number;
+      journalId: number;
     }
   | {
       page: "viewSpecificMetric";
-      metrickey: string;
+      metricId: string;
     };
 
 export type OptionalLocator =
@@ -53,30 +53,30 @@ export function RelativeToRoot(locator: Locator): string {
       return `/journals`;
     case "viewPost":
     case "editPost":
-      return `/posts/edit/${locator.postid}`;
+      return `/posts/edit/${locator.postId}`;
     case "viewJournal":
     case "editJournal":
-      return `/journal/${locator.themeid}`;
+      return `/journal/${locator.journalId}`;
     case "viewTimeline":
-      return `/journal/${locator.themeid}/posts`;
+      return `/journal/${locator.journalId}/posts`;
     case "viewMetrics":
-      return `/journal/${locator.themeid}/graphs`;
+      return `/journal/${locator.journalId}/graphs`;
     case "viewSpecificMetric":
-      return `/graphs/${locator.metrickey}`;
+      return `/graphs/${locator.metricId}`;
   }
 }
 
 const coerceNumber = z.string().regex(/^\d+$/).transform(Number);
 export const fromUrl = {
   noparams: z.object({}),
-  themeid: z.object({
-    themeid: coerceNumber,
+  journalId: z.object({
+    journalId: coerceNumber,
   }),
-  postid: z.object({
-    postid: coerceNumber,
+  postId: z.object({
+    postId: coerceNumber,
   }),
-  metrickey: z.object({
-    metrickey: z.string().min(1)
+  metricId: z.object({
+    metricId: z.string().min(1)
   })
 
 }

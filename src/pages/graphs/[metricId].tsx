@@ -5,16 +5,18 @@ import {
   InferGetServerSidePropsType,
 } from "next";
 import { CartesianGrid, Line, LineChart, Tooltip, XAxis, YAxis } from "recharts";
-import { GraphLayout } from "~/pages/journal/[themeid]/graphs";
+import { GraphLayout } from "~/pages/journal/[journalId]/graphs";
 import { Zoneless } from "~/lib/ZonelessDate";
 import { JournalScopeLayout } from "~/components/Layout";
 import { withAuth } from "~/model/Authorization";
 import { fromUrl } from "~/lib/urls";
+import { MetricModel } from "~/model/MetricModel";
+import { JournalModel } from "~/model/JournalModel";
 
 
-export const getServerSideProps = withAuth(fromUrl.metrickey, (auth, params) => auth.metric(params.metrickey, async model => ({
-  values: await model.values(),
-  metrics: await model.theme.metrics(),
+export const getServerSideProps = withAuth(fromUrl.metricId, (auth, params) => auth.metric(params.metricId, async context => ({
+  values: await new MetricModel(context).values(),
+  metrics: await new JournalModel(context).metrics(),
 })));
 
 // const data = [{name: 'Page A', uv: 400, pv: 2400, amt: 2400}, ];
@@ -22,13 +24,13 @@ export default function Page(
   props: InferGetServerSidePropsType<typeof getServerSideProps>,
 ) {
   return (
-    <JournalScopeLayout themeid={props._auth.theme.id}>
+    <JournalScopeLayout journalId={props._auth.journal.id}>
       <GraphLayout metrics={props.metrics} hideOnSmall>
         <LineChart
           width={400}
           height={400}
           data={props.values.map((v) => ({
-            date: Zoneless.toDate(v.entry.date),
+            date: Zoneless.toDate(v.post.date),
             zeroToTen: v.value,
           }))}
         >

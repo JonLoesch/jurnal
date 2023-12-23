@@ -10,9 +10,9 @@ import { Prisma } from "@prisma/client";
 import { EmailLink } from "~/lib/urls";
 
 export default function NewPost(props: {
-  post: Prisma.EntryGetPayload<{
+  post: Prisma.PostGetPayload<{
     include: {
-      theme: {
+      journal: {
         include: {
           owner: true;
         };
@@ -20,7 +20,7 @@ export default function NewPost(props: {
     };
   }>;
 }) {
-  const name = props.post.theme.owner.name;
+  const name = props.post.journal.owner.name;
   return (
     <Html>
       <Section style={emailStyles.main}>
@@ -30,7 +30,7 @@ export default function NewPost(props: {
           </Text>
           <Text style={emailStyles.paragraph}>
             Your friend {name} wrote a new jurnal entry. You can view it online{" "}
-            <EmailLink page="viewPost" postid={props.post.id}>
+            <EmailLink page="viewPost" postId={props.post.id}>
               here
             </EmailLink>
             . (I want it to also be directly viewable from this email but

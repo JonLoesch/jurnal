@@ -1,15 +1,15 @@
 import { Session } from "next-auth";
 import { AuthorizationError } from "./AuthorizationError";
 import { Prisma, PrismaClient } from "@prisma/client";
-import { ThemeModel, ThemeModelWithWritePermissions } from "./ThemeModel";
-import { AuthorizedContext } from "./AuthorizedContext";
+import { JournalModel, JournalModelWithWritePermissions } from "./JournalModel";
+import { AuthorizedContextKey, AuthorizedContext } from "./AuthorizedContext";
 import { GetServerSideProps } from "next";
 import { getServerAuthSession } from "~/server/auth";
 import { db } from "~/server/db";
 import { z } from "zod";
 import { MetricModel } from "./MetricModel";
 import { protectedProcedure } from "~/server/api/trpc";
-import { EntryModel, EntryModelWithWritePermissions } from "./EntryModel";
+import { PostModel, PostModelWithWritePermissions } from "./PostModel";
 import { TRPCError } from "@trpc/server";
 
 type MaybeAuthError<T> =
@@ -37,28 +37,28 @@ async function wrapResult<T>(fn: () => Promise<T>): Promise<MaybeAuthError<T>> {
   }
 }
 
-function checkThemeAccess(
+function checkJournalAccess(
   session: Session | null,
-  theme:
-    | Prisma.ThemeGetPayload<{
+  journal:
+    | Prisma.JournalGetPayload<{
         select: {
           isPublic: true;
           id: true;
-          reader: true;
+          readers: true;
           owner: true;
         };
       }>
     | null
     | undefined,
-): AuthorizedContext<"theme">["theme"] {
-  if (theme == null) {
+): AuthorizedContext<["journal"]>["_auth"]["journal"] {
+  if (journal == null) {
     throw new AuthorizationError();
   }
-  const write = theme.owner.email === session?.user.email;
+  const write = journal.owner.email === session?.user.email;
   const read =
     write ||
-    theme.reader.some((r) => r.email === session?.user.email) ||
-    theme.isPublic;
+    journal.readers.some((r) => r.email === session?.user.email) ||
+    journal.isPublic;
 
   if (!read) {
     throw new AuthorizationError();
@@ -67,7 +67,7 @@ function checkThemeAccess(
   return {
     read,
     write,
-    id: theme.id,
+    id: journal.id,
     //, userId: session?.user.id
   };
 }
@@ -76,170 +76,117 @@ export const Authorization = (
   prisma: PrismaClient,
   session: Session | null,
 ) => {
-  async function fromThemeId(themeid: number) {
-    return checkThemeAccess(
+  async function fromJournalId(journalId: number) {
+    return checkJournalAccess(
       session,
-      await prisma.theme.findUnique({
-        where: { id: themeid },
+      await prisma.journal.findUnique({
+        where: { id: journalId },
         include: {
-          reader: true,
+          readers: true,
           owner: true,
         },
       }),
     );
   }
 
-  async function fromPostId(postid: number) {
-    return checkThemeAccess(
+  async function fromPostId(postId: number) {
+    return checkJournalAccess(
       session,
       (
-        await db.entry.findUnique({
-          where: { id: postid },
+        await db.post.findUnique({
+          where: { id: postId },
           include: {
-            theme: {
+            journal: {
               include: {
-                reader: true,
+                readers: true,
                 owner: true,
               },
             },
           },
         })
-      )?.theme,
+      )?.journal,
     );
   }
 
+  async function includeAuth<
+    Props extends Record<string, unknown>,
+    Key extends AuthorizedContextKey,
+  >(
+    getProps: (context: AuthorizedContext<Key>) => Promise<Props>,
+    context: AuthorizedContext<Key>,
+  ) {
+    return {
+      _auth: context._auth,
+      ...(await getProps(context)),
+    };
+  }
+
   return {
-    theme<Props extends Record<string, unknown>>(
-      themeid: number,
-      getProps: (model: ThemeModel) => Promise<Props>,
+    journal<Props extends Record<string, unknown>>(
+      journalId: number,
+      getProps: (context: AuthorizedContext<["journal"]>) => Promise<Props>,
     ) {
       return wrapResult(async () => {
-        const theme = await fromThemeId(themeid);
-        return {
-          _auth: {
-            theme,
-          },
-          ...(await getProps(
-            new ThemeModel({
-              prisma,
-              session,
-              theme,
-            }),
-          )),
-        };
+        const journal = await fromJournalId(journalId);
+        return includeAuth(getProps, { _auth: { journal }, prisma, session });
       });
     },
-    themeWithWritePermissions<Props extends Record<string, unknown>>(
-      themeid: number,
-      getProps: (model: ThemeModelWithWritePermissions) => Promise<Props>,
-    ) {
-      return wrapResult(async () => {
-        const theme = await fromThemeId(themeid);
-        if (!theme.write) {
-          throw new AuthorizationError();
-        }
-        return {
-          _auth: {
-            theme,
-          },
-          ...(await getProps(
-            new ThemeModelWithWritePermissions({
-              prisma,
-              session,
-              theme,
-            }),
-          )),
-        };
-      });
-    },
+
     post<Props extends Record<string, unknown>>(
-      postid: number,
-      getProps: (model: EntryModel) => Promise<Props>,
+      postId: number,
+      getProps: (
+        context: AuthorizedContext<["journal", "post"]>,
+      ) => Promise<Props>,
     ) {
       return wrapResult(async () => {
-        const theme = await fromPostId(postid);
-        return {
-          _auth: {
-            theme,
-          },
-          ...(await getProps(
-            new EntryModel(
-              {
-                prisma,
-                session,
-                theme,
-              },
-              postid,
-            ),
-          )),
+        const journal = await fromPostId(postId);
+        const post = {
+          read: journal.read,
+          write: journal.write,
+          id: postId,
         };
-      });
-    },
-    postWithWritePermissions<Props extends Record<string, unknown>>(
-      postid: number,
-      getProps: (model: EntryModelWithWritePermissions) => Promise<Props>,
-    ) {
-      return wrapResult(async () => {
-        const theme = await fromPostId(postid);
-        if (!theme.write) {
-          throw new AuthorizationError();
-        }
-        return {
-          _auth: {
-            theme,
-          },
-          ...(await getProps(
-            new EntryModelWithWritePermissions(
-              {
-                prisma,
-                session,
-                theme,
-              },
-              postid,
-            ),
-          )),
-        };
+        return includeAuth(getProps, {
+          _auth: { journal, post },
+          prisma,
+          session,
+        });
       });
     },
 
     metric<Props extends Record<string, unknown>>(
-      metrickey: string,
-      getProps: (model: MetricModel) => Promise<Props>,
+      metricId: string,
+      getProps: (
+        model: AuthorizedContext<["journal", "metric"]>,
+      ) => Promise<Props>,
     ) {
       return wrapResult(async () => {
-        const theme = checkThemeAccess(
-          session,
-          (
-            await db.metric.findUnique({
-              where: { key: metrickey },
-              include: {
-                theme: {
-                  select: {
-                    id: true,
-                    isPublic: true,
-                    reader: true,
-                    owner: true,
-                  },
-                },
+        const metric = await db.metric.findUniqueOrThrow({
+          where: { id: metricId },
+          include: {
+            journal: {
+              select: {
+                id: true,
+                isPublic: true,
+                readers: true,
+                owner: true,
               },
-            })
-          )?.theme,
-        );
-        return {
-          _auth: {
-            theme,
+            },
           },
-          ...(await getProps(
-            new MetricModel(
-              {
-                prisma,
-                session,
-                theme,
-              },
-              metrickey,
-            ),
-          )),
-        };
+        });
+        const journal = checkJournalAccess(session, metric.journal);
+        return includeAuth(getProps, {
+          _auth: {
+            journal,
+            metric: {
+              id: metric.id,
+              read: journal.read,
+              write: journal.write,
+              metricType: metric.metricSchema.metricType,
+            },
+          },
+          prisma,
+          session,
+        });
       });
     },
     session,
@@ -276,10 +223,7 @@ export function withAuth<
   };
 }
 
-export function trpcMutation<
-  ParamsZod extends z.AnyZodObject,
-  Props,
->(
+export function trpcMutation<ParamsZod extends z.AnyZodObject, Props>(
   validator: ParamsZod,
   fn: (
     authorization: ReturnType<typeof Authorization>,
@@ -287,16 +231,15 @@ export function trpcMutation<
   ) => Promise<MaybeAuthError<Props>>,
 ) {
   return protectedProcedure
-    .input(validator.extend({})) // What?  Why does this matter?
+    .input(validator)
     .mutation(async ({ ctx, input }) => {
-      const result = await fn(Authorization(ctx.db, ctx.session), input);
-      if (result.error === 'authorization_error') {
+      const result = await fn(Authorization(ctx.db, ctx.session), input as z.infer<ParamsZod>);
+      if (result.error === "authorization_error") {
         throw new TRPCError({
-          code: 'FORBIDDEN',
-          message: 'Not authorized to access this data',
-        })
-      }
-      else {
+          code: "FORBIDDEN",
+          message: "Not authorized to access this data",
+        });
+      } else {
         return result.data;
       }
     });
