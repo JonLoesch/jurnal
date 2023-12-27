@@ -1,4 +1,4 @@
-import { FC, Fragment, PropsWithChildren, useRef } from "react";
+import { FC, Fragment, PropsWithChildren, ReactNode, useRef } from "react";
 import { useTooltipWatch } from "~/lib/hoveredElement";
 import { ifElse } from "~/lib/ifElse";
 import { Locator, SafeLink } from "~/lib/urls";
@@ -39,33 +39,60 @@ export const Groups = {
   GroupSection(props: PropsWithChildren) {
     return <div className="flex flex-col gap-3">{props.children}</div>;
   },
-  Group(props: PropsWithChildren<{ title: string; description: string }>) {
+  Group(
+    props: PropsWithChildren<{
+      title: string;
+      description?: string;
+      controls?: ReactNode[];
+    }>,
+  ) {
     return (
-      <div className="grid grid-cols-[250px_1fr] gap-y-3 border-l-2 border-neutral bg-base-300 py-3">
-        <div className="sticky -top-1 z-10 col-span-2 bg-neutral text-neutral-content py-2 text-lg opacity-100 pl-2">
-          {props.title}
+      <div className="grid grid-cols-[250px_1fr] items-start gap-y-3 border-l-2 border-neutral bg-base-300 py-3">
+        <div className="sticky -top-1 z-10 col-span-2 bg-neutral p-2 text-lg text-neutral-content opacity-100">
+          <div className="flex flex-row items-center justify-between">
+            <div>{props.title}</div>
+            <div className="flex flex-row items-center gap-2">
+              {props.controls}
+            </div>
+          </div>
         </div>
-        <div className="col-span-2 pl-7 text-gray-400">
-          {props.description}
-        </div>
+        <div className="col-span-2 pl-7 text-gray-400">{props.description}</div>
         {props.children}
       </div>
     );
   },
-  Item(props: PropsWithChildren<{ title: string; description: string }>) {
+  Item(props: PropsWithChildren<{ title: string; description?: string }>) {
     return (
       <>
-        <div className="group p-2 pl-4 col-span-2  md:col-span-1 md:py-5 tooltip tooltip-bottom md:tooltip-right text-left h-auto" data-tip={props.description}>
+        <div
+          className="group tooltip tooltip-bottom col-span-2  h-auto p-2 pl-4 text-left md:tooltip-right md:col-span-1 md:py-5"
+          data-tip={props.description}
+        >
           {props.title}
         </div>
-        <div className="pl-7 col-span-2 md:col-span-1 md:pl-0 md:py-5 pr-3 md:pr-6"> {props.children}</div>
+        <div className="col-span-2 pl-7 pr-3 md:col-span-1 md:py-5 md:pl-0 md:pr-6">
+          {props.children}
+        </div>
       </>
     );
   },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } satisfies Record<string, FC<any>>;
 
-export const StackedForm = {
+export const Forms = {
+  Form(props: PropsWithChildren<{ onSubmit: () => void }>) {
+    return (
+      <form
+        onSubmit={(e) => {
+          props.onSubmit();
+          e.preventDefault();
+        }}
+      >
+        {props.children}
+      </form>
+    );
+  },
+
   SubmitButton(
     props: PropsWithChildren<{ disabled?: boolean; label: string }>,
   ) {
@@ -80,49 +107,7 @@ export const StackedForm = {
       </button>
     );
   },
-  CancelButton() {
-    return (
-      <button
-        type="button"
-        className="text-sm font-semibold leading-6 text-gray-900"
-      >
-        Cancel
-      </button>
-    );
-  },
-  ButtonPanel(props: PropsWithChildren) {
-    return (
-      <div className="flex items-center justify-end gap-x-6 border-t border-gray-900/10 px-4 py-4 sm:px-8">
-        {props.children}
-      </div>
-    );
-  },
-  Main(props: PropsWithChildren<{ onSubmit: () => void }>) {
-    return (
-      <div className="space-y-10 divide-y divide-gray-900/10  backdrop-brightness-95 sm:p-8">
-        <form
-          onSubmit={(e) => {
-            props.onSubmit();
-            e.preventDefault();
-          }}
-        >
-          {props.children}
-        </form>
-      </div>
-    );
-  },
-  SectionHeader(props: { title: string; description?: string }) {
-    return (
-      <div className="px-4 sm:px-0">
-        <h2 className="text-base font-semibold leading-7 text-gray-900">
-          {props.title}
-        </h2>
-        <p className="mt-1 text-sm leading-6 text-gray-600">
-          {props.description}
-        </p>
-      </div>
-    );
-  },
+
   Checkbox(props: {
     inputKey: string;
     label: string;
@@ -150,59 +135,22 @@ export const StackedForm = {
       </div>
     );
   },
-  // TextArea(props: {
-  //   metricKey: string;
-  //   label: string;
-  //   text: string | null;
-  //   onChange: (text: string | null) => void;
-  //   placeholder?: string;
-  // }) {
-  //   return (
-  //     <div className="col-span-full form-control">
-  //       <label
-  //         htmlFor={props.metricKey}
-  //         className="block text-sm font-medium leading-6 text-gray-900"
-  //       >
-  //         {props.label}
-  //       </label>
-  //       <div className="mt-2">
-  //         <textarea
-  //           id={props.metricKey}
-  //           name={props.metricKey}
-  //           rows={3}
-  //           className="block w-full rounded-md border-0 px-2 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-  //           value={props.text ?? ""}
-  //           onChange={(e) =>
-  //             props.onChange(e.target.value === "" ? null : e.target.value)
-  //           }
-  //           placeholder={props.placeholder}
-  //         />
-  //       </div>
-  //     </div>
-  //   );
-  // },
-  SectionItem(props: PropsWithChildren) {
-    return <div className="col-span-full bg-white"> {props.children}</div>;
-  },
-  Section(props: PropsWithChildren<{ title: string; description?: string }>) {
-    return (
-      <div className="grid grid-cols-1 gap-x-8 gap-y-8 pt-10 first:pt-0 md:grid-cols-3">
-        <StackedForm.SectionHeader
-          title={props.title}
-          description={props.description}
-        />
-        <div className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl md:col-span-2">
-          <div className="px-4 py-6 sm:p-8">
-            <div className="grid max-w-2xl grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
-              {props.children}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } satisfies Record<string, FC<any>>;
+
+// export const StackedForm = {
+//   // CancelButton() {
+//   //   return (
+//   //     <button
+//   //       type="button"
+//   //       className="text-sm font-semibold leading-6 text-gray-900"
+//   //     >
+//   //       Cancel
+//   //     </button>
+//   //   );
+//   // },
+//   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+// } satisfies Record<string, FC<any>>;
 
 type Action = Locator | { page: "action"; handler: () => void };
 

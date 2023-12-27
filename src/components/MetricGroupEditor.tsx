@@ -3,30 +3,26 @@ import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-
 import { CSS } from "@dnd-kit/utilities";
 import { Prisma, PrismaClient } from "@prisma/client";
 import { produce } from "immer";
-import { FC, useState } from "react";
+import { FC, useEffect, useState } from "react";
 
 type MetricGroup = Prisma.MetricGroupGetPayload<{ include: { metrics: true } }>;
 type Metric = MetricGroup["metrics"][number];
 
-export const MetricGroupEditor: FC<{ metricGroups: MetricGroup[] }> = (
+export const MetricGroupEditor: FC<{ metricGroups: MetricGroup[], setMetricGroups: (metricGroups: MetricGroup[]) => void }> = (
   props,
 ) => {
-  const [state, setState] = useState(props.metricGroups);
-  const [dragStartState, setDragStartState] = useState<typeof state | null>(
-    null,
-  );
+  const [temporaryDragState, setTemporaryDragState] = useState(props.metricGroups);
+  useEffect(() => {
+    setTemporaryDragState(props.metricGroups);
+  }, [props.metricGroups]);
   return (
     <DndContext
-      onDragStart={({ active }) => {
-        setDragStartState(state);
-      }}
       onDragCancel={() => {
-        setState((s) => dragStartState ?? s);
-        setDragStartState(null);
+        setTemporaryDragState(props.metricGroups);
       }}
       onDragEnd={(e) => {
-        setState(
-          produce((draft) => {
+        props.setMetricGroups(
+          produce((draft: MetricGroup[]) => {
             if (e.over === null) return;
             const active = getInfo(draft, e.active.id as string);
             const over = getInfo(draft, e.over.id as string);
@@ -41,14 +37,14 @@ export const MetricGroupEditor: FC<{ metricGroups: MetricGroup[] }> = (
                 ...active.metricGroup.metrics.splice(active.metricIndex, 1),
               );
             }
-          }),
+          })(temporaryDragState)
         );
       }}
       onDragOver={(e) => {
         if (e.over === null) {
-          setState((s) => dragStartState ?? s);
+          setTemporaryDragState(props.metricGroups);
         } else {
-          setState(
+          setTemporaryDragState(
             produce((draft) => {
               if (e.over === null) return;
               const active = getInfo(draft, e.active.id as string);
@@ -74,7 +70,7 @@ export const MetricGroupEditor: FC<{ metricGroups: MetricGroup[] }> = (
         }
       }}
     >
-      {state.map((metricGroup) => (
+      {temporaryDragState.map((metricGroup) => (
         <MetricGroup {...metricGroup} key={metricGroup.id} />
       ))}
     </DndContext>
