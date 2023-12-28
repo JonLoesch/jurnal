@@ -158,6 +158,7 @@ function converMetricGroups(metricGroups: Parameters<typeof Page>[0]['journal'][
       name: m.name,
       description: m.description,
       id: m.id,
+      schema: m.metricSchema,
       dndID: `metric ${m.id}`,
     }))
   }));

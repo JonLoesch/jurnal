@@ -221,22 +221,22 @@ export class JournalModelWithWritePermissions extends JournalModel {
         }
         updatedGroupIds.push(group.id);
       }
-      // await this.prisma.metricGroup.deleteMany({
-      //   where: {
-      //     journalId: this.journalId,
-      //     id: {
-      //       notIn: updatedGroupIds,
-      //     }
-      //   }
-      // });
-      // await this.prisma.metric.deleteMany({
-      //   where: {
-      //     journalId: this.journalId,
-      //     id: {
-      //       notIn: updatedMetricIds,
-      //     }
-      //   }
-      // });
+      await this.prisma.metricGroup.deleteMany({
+        where: {
+          journalId: this.journalId,
+          id: {
+            notIn: updatedGroupIds,
+          }
+        }
+      });
+      await this.prisma.metric.deleteMany({
+        where: {
+          journalId: this.journalId,
+          id: {
+            notIn: updatedMetricIds,
+          }
+        }
+      });
     });
     //   ...(metricGroups?.reduce<PrismaPromise<unknown>[]>(
     //     (acc, group) => [
