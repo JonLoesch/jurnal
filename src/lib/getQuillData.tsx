@@ -6,7 +6,7 @@ import ReactQuill, { UnprivilegedEditor } from "react-quill";
 
 export function getQuillData(editorRef: RefObject<Quill>) {
   return {
-    full: editorRef.current?.getContents() ?? null,
-    firstLine: editorRef.current?.getText().replace(/\n.*$/s, "") ?? null,
+    full: editorRef.current?.getContents(),
+    firstLine: editorRef.current?.getText().replace(/\n.*$/s, ""),
   };
 }

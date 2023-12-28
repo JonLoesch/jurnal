@@ -43,7 +43,7 @@ export const Groups = {
     props: PropsWithChildren<{
       title: string;
       description?: string;
-      controls?: ReactNode[];
+      controls?: ReactNode;
     }>,
   ) {
     return (

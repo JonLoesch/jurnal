@@ -1,17 +1,52 @@
-import { DndContext, useDroppable } from "@dnd-kit/core";
-import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { DndContext, useDraggable, useDroppable } from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Prisma, PrismaClient } from "@prisma/client";
 import { produce } from "immer";
 import { FC, useEffect, useState } from "react";
+import { MetricSchema } from "~/lib/metricSchemas";
 
-type MetricGroup = Prisma.MetricGroupGetPayload<{ include: { metrics: true } }>;
-type Metric = MetricGroup["metrics"][number];
+// type MetricGroup = Prisma.MetricGroupGetPayload<{ include: { metrics: true } }>;
+// type Metric = MetricGroup["metrics"][number];
 
-export const MetricGroupEditor: FC<{ metricGroups: MetricGroup[], setMetricGroups: (metricGroups: MetricGroup[]) => void }> = (
-  props,
-) => {
-  const [temporaryDragState, setTemporaryDragState] = useState(props.metricGroups);
+// type MetricGroup = {
+//   metrics: Metric[],
+//   name: string,
+//   description: string,
+//   id: number,
+// } & ({operation: 'update'} | {operation: 'create'});
+// type Metric = {
+//   name: string,
+//   description: string,
+//   id: string,
+// } & ({operation: 'update'} | {operation: 'create'});
+
+type Metric = {
+  name: string;
+  description: string;
+  dndID: string;
+} & (
+  | { operation: "create"; schema: MetricSchema }
+  | { operation: "update"; id: string }
+);
+type MetricGroup = {
+  metrics: Metric[];
+  name: string;
+  description: string;
+  dndID: string,
+} & ({ operation: "create" } | { operation: "update"; id: number });
+
+export const ClientImpl_MetricGroupEditor: FC<{
+  metricGroups: MetricGroup[];
+  setMetricGroups: (metricGroups: MetricGroup[]) => void;
+}> = (props) => {
+  const [temporaryDragState, setTemporaryDragState] = useState(
+    props.metricGroups,
+  );
   useEffect(() => {
     setTemporaryDragState(props.metricGroups);
   }, [props.metricGroups]);
@@ -29,7 +64,7 @@ export const MetricGroupEditor: FC<{ metricGroups: MetricGroup[], setMetricGroup
             if (
               active?.type === "metric" &&
               over?.type === "metric" &&
-              active.metricGroup.id === over.metricGroup.id
+              active.metricGroup.dndID === over.metricGroup.dndID
             ) {
               active.metricGroup.metrics.splice(
                 over.metricIndex,
@@ -37,7 +72,7 @@ export const MetricGroupEditor: FC<{ metricGroups: MetricGroup[], setMetricGroup
                 ...active.metricGroup.metrics.splice(active.metricIndex, 1),
               );
             }
-          })(temporaryDragState)
+          })(temporaryDragState),
         );
       }}
       onDragOver={(e) => {
@@ -52,7 +87,7 @@ export const MetricGroupEditor: FC<{ metricGroups: MetricGroup[], setMetricGroup
               if (
                 active?.type === "metric" &&
                 over !== null &&
-                active.metricGroup.id !== over.metricGroup.id
+                active.metricGroup.dndID !== over.metricGroup.dndID
               ) {
                 active.metricGroup.metrics.splice(active.metricIndex, 1);
                 if (over.type === "metric_group") {
@@ -71,33 +106,35 @@ export const MetricGroupEditor: FC<{ metricGroups: MetricGroup[], setMetricGroup
       }}
     >
       {temporaryDragState.map((metricGroup) => (
-        <MetricGroup {...metricGroup} key={metricGroup.id} />
+        <MetricGroup {...metricGroup} key={metricGroup.dndID} />
       ))}
     </DndContext>
   );
 };
 
-const MetricGroup: FC<MetricGroup> = props => {
-  const { setNodeRef } = useDroppable({ id: dragAndDropIdentifier.metricGroup(props) });
+const MetricGroup: FC<MetricGroup> = (props) => {
+  const { setNodeRef } = useDroppable({
+    id: props.dndID,
+  });
   return (
-    <div className="border-2 my-8" ref={setNodeRef}>
+    <div className="my-8 border-2" ref={setNodeRef}>
       <div className="border-b-2">{props.name}</div>
       <SortableContext
-        items={props.metrics.map(dragAndDropIdentifier.metric)}
+        items={props.metrics.map(m => m.dndID)}
         strategy={verticalListSortingStrategy}
       >
         {props.metrics.map((m) => (
-          <Metric {...m} key={m.id} />
+          <Metric {...m} key={m.dndID} />
         ))}
       </SortableContext>
     </div>
   );
-}
+};
 
 const Metric: FC<Metric> = (props) => {
   const { setNodeRef, listeners, attributes, transform, transition } =
     useSortable({
-      id: dragAndDropIdentifier.metric(props),
+      id: props.dndID,
     });
 
   const style = {
@@ -111,18 +148,9 @@ const Metric: FC<Metric> = (props) => {
   );
 };
 
-const dragAndDropIdentifier = {
-  metricGroup(this: void, mg: MetricGroup) {
-    return `metric_group ${mg.id}`;
-  },
-  metric(this: void, m: Metric) {
-    return `metric ${m.id}`;
-  },
-};
-
 function getInfo(groups: MetricGroup[], dndID: string) {
   for (const metricGroup of groups) {
-    if (dragAndDropIdentifier.metricGroup(metricGroup) === dndID) {
+    if (metricGroup.dndID === dndID) {
       return {
         type: "metric_group" as const,
         metricGroup,
@@ -134,7 +162,7 @@ function getInfo(groups: MetricGroup[], dndID: string) {
       metricIndex++
     ) {
       const metric = metricGroup.metrics[metricIndex]!;
-      if (dragAndDropIdentifier.metric(metric) === dndID) {
+      if (metric.dndID === dndID) {
         return {
           type: "metric" as const,
           metricIndex,

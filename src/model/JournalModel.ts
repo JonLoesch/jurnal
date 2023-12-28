@@ -1,10 +1,13 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, PrismaPromise } from "@prisma/client";
 import { db } from "~/server/db";
 import { AuthorizedContext } from "./AuthorizedContext";
 import { Zoneless, ZonelessDate } from "~/lib/ZonelessDate";
 import { DeltaStatic } from "quill";
 import { AuthorizationError } from "./AuthorizationError";
 import { Model } from "./Model";
+import { z } from "zod";
+import { metricSchemas } from "~/lib/metricSchemas";
+import { v4 as uuidv4 } from "uuid";
 
 export class JournalModel extends Model<["journal"]> {
   protected authChecks(): {
@@ -102,6 +105,36 @@ export class JournalModel extends Model<["journal"]> {
   }
 }
 
+const validateMetric = z.discriminatedUnion("operation", [
+  z.object({
+    operation: z.literal("update"),
+    id: z.string(),
+    name: z.string(),
+    description: z.string(),
+  }),
+  z.object({
+    operation: z.literal("create"),
+    schema: metricSchemas.validateMetricSchema,
+    name: z.string(),
+    description: z.string(),
+  }),
+]);
+const validateMetricGroup = z.discriminatedUnion("operation", [
+  z.object({
+    operation: z.literal("update"),
+    id: z.number(),
+    metrics: validateMetric.array(),
+    name: z.string(),
+    description: z.string(),
+  }),
+  z.object({
+    operation: z.literal("create"),
+    metrics: validateMetric.array(),
+    name: z.string(),
+    description: z.string(),
+  }),
+]);
+
 export class JournalModelWithWritePermissions extends JournalModel {
   protected authChecks(): {
     scopes: readonly ["journal"];
@@ -121,14 +154,114 @@ export class JournalModelWithWritePermissions extends JournalModel {
     }
   }
 
-  async editJournal(description: string | null, quill: DeltaStatic | null) {
-    await this.prisma.journal.update({
-      where: { id: this.journalId },
-      data: {
-        quill: quill ?? undefined,
-        description: description ?? undefined,
-      },
+  public static validateMetricGroups = validateMetricGroup.array();
+  async editJournal(
+    description?: string,
+    quill?: DeltaStatic,
+    metricGroups?: Array<z.infer<typeof validateMetricGroup>>,
+  ) {
+    await this.prisma.$transaction(async () => {
+      await this.prisma.journal.update({
+        where: { id: this.journalId },
+        data: {
+          quill: quill,
+          description: description,
+        },
+      });
+      const updatedGroupIds: number[] = [];
+      const updatedMetricIds: string[] = [];
+      for (const [groupIndex, groupData] of metricGroups?.entries() ?? []) {
+        const group =
+          groupData.operation === "create"
+            ? await this.prisma.metricGroup.create({
+                data: {
+                  name: groupData.name,
+                  description: groupData.description,
+                  sortOrder: groupIndex + 1,
+                  journalId: this.journalId,
+                },
+              })
+            : await this.prisma.metricGroup.update({
+                where: {
+                  id: groupData.id,
+                  journalId: this.journalId,
+                },
+                data: {
+                  name: groupData.name,
+                  description: groupData.description,
+                  sortOrder: groupIndex + 1,
+                },
+              });
+        for (const [metricIndex, metricData] of groupData.metrics.entries()) {
+          const metric = metricData.operation === 'create' ?
+          await this.prisma.metric.create({
+            data: {
+              description: metricData.description,
+              name: metricData.name,
+              sortOrder: metricIndex + 1,
+              journalId: this.journalId,
+              metricGroupId: group.id,
+              type: 'deprecated',
+              metricSchema: metricData.schema,
+              id: uuidv4(),
+            }
+          }) : await this.prisma.metric.update({
+            where: {
+              id: metricData.id,
+              journalId: this.journalId,
+            },
+            data: {
+              metricGroupId: group.id,
+              description: metricData.description,
+              name: metricData.name,
+              sortOrder: metricIndex + 1,
+            }
+          });
+          updatedMetricIds.push(metric.id);
+        }
+        updatedGroupIds.push(group.id);
+      }
+      // await this.prisma.metricGroup.deleteMany({
+      //   where: {
+      //     journalId: this.journalId,
+      //     id: {
+      //       notIn: updatedGroupIds,
+      //     }
+      //   }
+      // });
+      // await this.prisma.metric.deleteMany({
+      //   where: {
+      //     journalId: this.journalId,
+      //     id: {
+      //       notIn: updatedMetricIds,
+      //     }
+      //   }
+      // });
     });
+    //   ...(metricGroups?.reduce<PrismaPromise<unknown>[]>(
+    //     (acc, group) => [
+    //       ...acc,
+    //       ...group.metrics.map((metric, metricIndex) =>
+    //         this.prisma.metric.update({
+    //           where: { id: metric.id },
+    //           data: {
+    //             metricGroupId: group.id,
+    //             sortOrder: metricIndex + 1,
+    //           },
+    //         }),
+    //       ),
+    //     ],
+    //     [],
+    //   ) ?? []),
+    //   ...(metricGroups?.map((group, groupIndex) =>
+    //     this.prisma.metricGroup.update({
+    //       where: { id: group.id },
+    //       data: {
+    //         sortOrder: groupIndex + 1,
+    //       },
+    //     }),
+    //   ) ?? []),
+    // ]);
   }
 
   async newPost(date: ZonelessDate) {

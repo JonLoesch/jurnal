@@ -68,28 +68,28 @@ model Value {
 }
 
 model Metric {
-    id            String       @id @map("key")
+    id            String      @id @map("key")
     name          String
-    description          String
+    description   String
     values        Value[]
     type          String
     /// [MetricSchema]
     metricSchema  Json
     sortOrder     Int
-    journal       Journal      @relation(fields: [journalId], references: [id])
-    journalId     Int          @map("themeId")
+    journal       Journal     @relation(fields: [journalId], references: [id])
+    journalId     Int         @map("themeId")
     metricGroup   MetricGroup @relation(fields: [metricGroupId], references: [id])
     metricGroupId Int
 }
 
 model MetricGroup {
-    id        Int      @id @default(autoincrement())
-    sortOrder Int
-    name      String
-    description      String
-    metrics   Metric[]
-    journal   Journal  @relation(fields: [journalId], references: [id])
-    journalId Int
+    id          Int      @id @default(autoincrement())
+    sortOrder   Int
+    name        String
+    description String
+    metrics     Metric[]
+    journal     Journal  @relation(fields: [journalId], references: [id])
+    journalId   Int
 }
 
 model Journal {

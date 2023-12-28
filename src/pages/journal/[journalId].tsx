@@ -5,7 +5,7 @@ import { FC, useRef, useState } from "react";
 import { UnprivilegedEditor } from "react-quill";
 import { JournalScopeLayout } from "~/components/Layout";
 import { getQuillData } from "~/lib/getQuillData";
-import { WYSIWYG } from "~/components/dynamic";
+import { MetricGroupEditor, WYSIWYG } from "~/components/dynamic";
 import {
   Forms,
   FullPage,
@@ -18,8 +18,9 @@ import { api } from "~/utils/api";
 import { Toast, useToastMessage } from "~/lib/useToastMessage";
 import { withAuth } from "~/model/Authorization";
 import { fromUrl } from "~/lib/urls";
-import { MetricGroupEditor } from "~/components/MetricGroupEditor";
 import { JournalModel } from "~/model/JournalModel";
+import { Prisma } from "@prisma/client";
+import { ClientImpl_MetricGroupEditor } from "~/components/MetricGroupEditor";
 
 export const getServerSideProps = withAuth(fromUrl.journalId, (auth, params) =>
   auth.journal(params.journalId, async (context) => ({
@@ -45,7 +46,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
   props,
 ) => {
   const [dirty, setDirty] = useState(false);
-  const [metricGroups, setMetricGroups] = useState(props.journal.metricGroups);
+  const [metricGroups, setMetricGroups] = useState(() => converMetricGroups(props.journal.metricGroups));
   const editJournal = api.journals.edit.useMutation();
   const editorRef = useRef<Quill>(null);
 
@@ -69,12 +70,12 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
         <MainSection>
           <Forms.Form onSubmit={() => {
               const quillData = getQuillData(editorRef);
-              console.log(metricGroups);
               void editJournal
                 .mutateAsync({
                   journalId: props.journal.id,
                   quill: quillData.full,
                   description: quillData.firstLine,
+                  metricGroups: metricGroups,
                 })
                 .then(() => setDirty(false));
             }}>
@@ -84,7 +85,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
               description={
                 isMyJournal ? "Edit metadata about the journal" : undefined
               }
-              controls={isMyJournal ? [metadataSaveButton] : undefined}
+              controls={isMyJournal ? metadataSaveButton : undefined}
             >
               <Groups.Item
                 title="Description"
@@ -106,7 +107,10 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
                 >
                   <MetricGroupEditor
                     metricGroups={metricGroups}
-                    setMetricGroups={setMetricGroups}
+                    setMetricGroups={x => {
+                      setDirty(true);
+                      setMetricGroups(x);
+                    }}
                   />
                 </Groups.Item>
               )}
@@ -141,5 +145,22 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
     </JournalScopeLayout>
   );
 };
+
+function converMetricGroups(metricGroups: Parameters<typeof Page>[0]['journal']['metricGroups']): Parameters<typeof ClientImpl_MetricGroupEditor>[0]['metricGroups'] {
+  return metricGroups.map(g => ({
+    operation: 'update',
+    name: g.name,
+    description: g.description,
+    id: g.id,
+    dndID: `metric_group ${g.id}`,
+    metrics: g.metrics.map(m => ({
+      operation: 'update',
+      name: m.name,
+      description: m.description,
+      id: m.id,
+      dndID: `metric ${m.id}`,
+    }))
+  }));
+}
 
 export default Page;

@@ -15,11 +15,12 @@ const jsonSchema: z.ZodType<Json> = z.lazy(() =>
 
 export const journalsRouter = createTRPCRouter({
   edit: trpcMutation(z.object({
-    description: z.string().or(z.null()),
-    quill: z.custom<DeltaStatic>().or(z.null()),
+    description: z.string().optional(),
+    quill: z.custom<DeltaStatic>().optional(),
+    metricGroups: JournalModelWithWritePermissions.validateMetricGroups.optional(),
     journalId: z.number(),
   }), (auth, input) => auth.journal(input.journalId, async context => {
-    await new JournalModelWithWritePermissions(context).editJournal(input.description, input.quill);
+    await new JournalModelWithWritePermissions(context).editJournal(input.description, input.quill, input.metricGroups);
     return {success: true};
   })),
   
