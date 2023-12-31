@@ -221,7 +221,10 @@ export class JournalModelWithWritePermissions extends JournalModel {
         }
         updatedGroupIds.push(group.id);
       }
-      await this.prisma.metricGroup.deleteMany({
+      await this.prisma.metricGroup.updateMany({
+        data: {
+          active: false,
+        },
         where: {
           journalId: this.journalId,
           id: {
@@ -229,7 +232,10 @@ export class JournalModelWithWritePermissions extends JournalModel {
           }
         }
       });
-      await this.prisma.metric.deleteMany({
+      await this.prisma.metric.updateMany({
+        data: {
+          active: false,
+        },
         where: {
           journalId: this.journalId,
           id: {

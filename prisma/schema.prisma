@@ -69,6 +69,7 @@ model Value {
 
 model Metric {
     id            String      @id @map("key")
+    active        Boolean     @default(true)
     name          String
     description   String
     values        Value[]
@@ -84,6 +85,7 @@ model Metric {
 
 model MetricGroup {
     id          Int      @id @default(autoincrement())
+    active      Boolean  @default(true)
     sortOrder   Int
     name        String
     description String

@@ -78,16 +78,6 @@ export class PostModel extends Model<["journal", "post"]> {
         where: {
           journalId: this.journalId,
         },
-        orderBy: [
-          {
-            metricGroup: {
-              sortOrder: "asc",
-            },
-          },
-          {
-            sortOrder: "asc",
-          },
-        ],
         include: {
           metricGroup: true,
           values: {
@@ -97,8 +87,15 @@ export class PostModel extends Model<["journal", "post"]> {
           },
         },
       })
-      .then((r) =>
-        r
+      .then((r) => {
+        const maxMetricGroupSortOrder = Math.max(
+          ...r
+            .filter((m) => m.active && m.metricGroup.active)
+            .map((m) => m.metricGroup.sortOrder),
+        );
+        let autoInactiveSortOrder = maxMetricGroupSortOrder + 1;
+        const inactiveSorts: Record<number, number> = {};
+        return r
           .map(({ values, metricSchema, ...metric }) => {
             const schemaAndValue = {
               metricType: metricSchema.metricType,
@@ -119,20 +116,21 @@ export class PostModel extends Model<["journal", "post"]> {
                 >;
               }
             >
-          >(
-            (acc, { metricGroup, ...metric }) => ({
+          >((acc, { metricGroup, ...metric }) => {
+            const groupSort =
+              metric.active && metricGroup.active
+                ? metricGroup.sortOrder
+                : inactiveSorts[metricGroup.id] ??
+                  (inactiveSorts[metricGroup.id] = autoInactiveSortOrder++);
+            return {
               ...acc,
-              [metricGroup.sortOrder]: {
+              [groupSort]: {
                 ...metricGroup,
-                metrics: [
-                  ...(acc[metricGroup.sortOrder]?.metrics ?? []),
-                  metric,
-                ],
+                metrics: [...(acc[groupSort]?.metrics ?? []), metric],
               },
-            }),
-            {},
-          ),
-      );
+            };
+          }, {});
+      });
   }
 }
 

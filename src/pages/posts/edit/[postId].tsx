@@ -3,6 +3,7 @@ import { InferGetServerSidePropsType } from "next";
 import {
   FC,
   PropsWithChildren,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -52,7 +53,9 @@ export const getServerSideProps = withAuth(fromUrl.postId, (auth, params) =>
   }),
 );
 
-const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
+type Props = InferGetServerSidePropsType<typeof getServerSideProps>;
+
+const Page: FC<Props> = (
   props,
 ) => {
   const [dirty, setDirty] = useState(false);
@@ -74,6 +77,17 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
   }));
 
   const editPost = api.posts.edit.useMutation();
+
+  const metricVisible = useCallback((metric: Props['metricValues'][number]['metrics'][number]) => {
+    if (props._auth.journal.write) {
+      return metric.active || metric.value !== null;
+    } else {
+      return metric.value !== null;
+    }
+  }, [props._auth.journal.write]);
+  const metricGroupVisible = useCallback((group: Props['metricValues'][number]) => {
+    return group.metrics.some(metricVisible);
+  }, [metricVisible]);
 
   return (
     <JournalScopeLayout journalId={props._auth.journal.id}>
@@ -126,8 +140,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
           <Groups.GroupSection>
             {Object.values(props.metricValues).map(
               (metricGroup) =>
-                (props._auth.post.write ||
-                  metricGroup.metrics.some((x) => x.value !== null)) && (
+                metricGroupVisible(metricGroup) && (
                   <Groups.Group
                     title={metricGroup.name}
                     description={metricGroup.description}
@@ -135,7 +148,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
                   >
                     {metricGroup.metrics.map(
                       (metric) =>
-                        (props._auth.post.write || metric.value !== null) && (
+                        metricVisible(metric) && (
                           <Groups.Item
                             title={metric.name}
                             description={metric.description}
