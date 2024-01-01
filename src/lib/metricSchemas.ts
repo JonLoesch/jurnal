@@ -202,10 +202,7 @@ function updateMetricValue(
   const validatedValue = schemas[metricType].value.nullable().parse(old);
   const validatedChange = schemas[metricType].change.parse(change);
   // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
-  return schemas[metricType].apply(
-    validatedValue as any,
-    validatedChange as never,
-  );
+  return schemas[metricType].apply(validatedValue as any, validatedChange as never);
 }
 
 export const metricSchemas = {
