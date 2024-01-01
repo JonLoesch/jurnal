@@ -1,7 +1,7 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import { Immutable } from "immer";
 import { Session } from "next-auth";
-import { MetricType } from "~/lib/metricSchemas";
+import { MetricSchema } from "~/lib/metricSchemas";
 
 type GlobalContext = {
   prisma: PrismaClient;
@@ -11,7 +11,7 @@ type GlobalContext = {
 type OptionalAuthContext = {
   journal: Roles<{id: number}>;
   post: Roles<{id: number}>;
-  metric: Roles<{id: string, metricType: MetricType}>;
+  metric: Roles<{id: string, metricSchema: MetricSchema}>;
 };
 type Roles<T extends Record<string, unknown>> = {
   read: boolean;

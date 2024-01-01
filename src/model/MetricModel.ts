@@ -3,7 +3,7 @@ import { AuthorizedContext } from "./AuthorizedContext";
 import { JournalModel } from "./JournalModel";
 import { Model } from "./Model";
 import { z } from "zod";
-import { GenericMetricChange, metricSchemas } from "~/lib/metricSchemas";
+import { GenericMetricChange, QuillData, metricSchemas } from "~/lib/metricSchemas";
 
 export class MetricModel extends Model<["journal", "metric"]> {
   protected authChecks(): {
@@ -58,8 +58,11 @@ export class MetricModeWithWritePermissions extends MetricModel {
     };
   }
 
+  protected get metricSchema() {
+    return this._auth.metric.metricSchema;
+  }
   protected get metricType() {
-    return this._auth.metric.metricType;
+    return this.metricSchema.metricType;
   }
 
   async editValue({
@@ -106,9 +109,31 @@ export class MetricModeWithWritePermissions extends MetricModel {
               metricValue: newValue,
             },
           });
+          if (
+            this.metricSchema.metricType === "richText" &&
+            this.metricSchema.headline && 'ops' in newValue
+          ) {
+            await db.post.update({
+              where: {id: postId},
+              data: { text: firstLine(newValue)}
+            });
+          }
         }
       });
     }
     return { success: true };
   }
+}
+
+function firstLine(data: QuillData) {
+  let result = '';
+  for (const op of data.ops ?? []) {
+    if (op.insert !== null && typeof op.insert === 'string') {
+      result += op.insert.replace(/\n.*$/s, '');
+      if (/\n/.test(result)) break;
+    } else {
+      break;
+    }
+  }
+  return result;
 }

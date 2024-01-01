@@ -71,7 +71,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
             {props.posts.map((post, index) => {
               const date = Zoneless.toDate(post.date);
               const entryType =
-                post.quillData === null || post.quillData === undefined
+                post.text === null || post.text === undefined
                   ? "metric_recorded"
                   : "journal_entry";
               return (
@@ -91,7 +91,7 @@ const Page: FC<InferGetServerSidePropsType<typeof getServerSideProps>> = (
                               <Image
                                 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                                 src={PulseIcon}
-                                alt="Metric Reccorded"
+                                alt="Metric Recorded"
                                 className="h-5 w-5"
                                 aria-hidden="true"
                               />

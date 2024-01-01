@@ -12,6 +12,35 @@ import { protectedProcedure } from "~/server/api/trpc";
 import { PostModel, PostModelWithWritePermissions } from "./PostModel";
 import { TRPCError } from "@trpc/server";
 
+function checkJournalAccess(
+  session: Session | null,
+  journal: Prisma.JournalGetPayload<{
+    select: {
+      isPublic: true;
+      id: true;
+      readers: true;
+      owner: true;
+    };
+  }>,
+): AuthorizedContext<["journal"]>["_auth"]["journal"] {
+  const write = journal.owner.email === session?.user.email;
+  const read =
+    write ||
+    journal.readers.some((r) => r.email === session?.user.email) ||
+    journal.isPublic;
+
+  if (!read) {
+    throw new AuthorizationError();
+  }
+
+  return {
+    read,
+    write,
+    id: journal.id,
+    //, userId: session?.user.id
+  };
+}
+
 type MaybeAuthError<T> =
   | {
       error: null;
@@ -37,75 +66,83 @@ async function wrapResult<T>(fn: () => Promise<T>): Promise<MaybeAuthError<T>> {
   }
 }
 
-function checkJournalAccess(
-  session: Session | null,
-  journal:
-    | Prisma.JournalGetPayload<{
-        select: {
-          isPublic: true;
-          id: true;
-          readers: true;
-          owner: true;
-        };
-      }>
-    | null
-    | undefined,
-): AuthorizedContext<["journal"]>["_auth"]["journal"] {
-  if (journal == null) {
-    throw new AuthorizationError();
-  }
-  const write = journal.owner.email === session?.user.email;
-  const read =
-    write ||
-    journal.readers.some((r) => r.email === session?.user.email) ||
-    journal.isPublic;
-
-  if (!read) {
-    throw new AuthorizationError();
-  }
-
-  return {
-    read,
-    write,
-    id: journal.id,
-    //, userId: session?.user.id
-  };
-}
-
 export const Authorization = (
   prisma: PrismaClient,
   session: Session | null,
 ) => {
-  async function fromJournalId(journalId: number) {
-    return checkJournalAccess(
-      session,
-      await prisma.journal.findUnique({
-        where: { id: journalId },
-        include: {
-          readers: true,
-          owner: true,
-        },
-      }),
-    );
+  async function fromJournalId(
+    journalId: number,
+  ): Promise<AuthorizedContext<["journal"]>["_auth"]> {
+    const journalData = await prisma.journal.findUnique({
+      where: { id: journalId },
+      include: {
+        readers: true,
+        owner: true,
+      },
+    });
+    if (journalData == null) {
+      throw new AuthorizationError();
+    }
+    return { journal: checkJournalAccess(session, journalData) };
   }
 
-  async function fromPostId(postId: number) {
-    return checkJournalAccess(
-      session,
-      (
-        await db.post.findUnique({
-          where: { id: postId },
+  async function fromPostId(
+    postId: number,
+  ): Promise<AuthorizedContext<["journal", "post"]>["_auth"]> {
+    const postData = await db.post.findUnique({
+      where: { id: postId },
+      include: {
+        journal: {
           include: {
-            journal: {
-              include: {
-                readers: true,
-                owner: true,
-              },
-            },
+            readers: true,
+            owner: true,
           },
-        })
-      )?.journal,
-    );
+        },
+      },
+    });
+    if (postData == null) {
+      throw new AuthorizationError();
+    }
+    const journal = checkJournalAccess(session, postData.journal);
+    return {
+      journal: journal,
+      post: {
+        id: postData.id,
+        read: journal.read, // There are no separate post R/W access controls, they are inherited from the journal (for now)
+        write: journal.write, // There are no separate post R/W access controls, they are inherited from the journal (for now)
+      },
+    };
+  }
+
+  async function fromMetricId(
+    metricId: string,
+  ): Promise<AuthorizedContext<["journal", "metric"]>["_auth"]> {
+    const metricData = await db.metric.findUnique({
+      where: { id: metricId },
+      include: {
+        journal: {
+          select: {
+            id: true,
+            isPublic: true,
+            readers: true,
+            owner: true,
+          },
+        },
+      },
+    });
+    if (metricData == null) {
+      throw new AuthorizationError();
+    }
+    const journal = checkJournalAccess(session, metricData.journal);
+    return {
+      journal,
+      metric: {
+        id: metricData.id,
+        read: journal.read, // There are no separate metric R/W access controls, they are inherited from the journal (for now)
+        write: journal.write, // There are no separate metric R/W access controls, they are inherited from the journal (for now)
+        metricSchema: metricData.metricSchema,
+      },
+    };
   }
 
   async function includeAuth<
@@ -127,8 +164,8 @@ export const Authorization = (
       getProps: (context: AuthorizedContext<["journal"]>) => Promise<Props>,
     ) {
       return wrapResult(async () => {
-        const journal = await fromJournalId(journalId);
-        return includeAuth(getProps, { _auth: { journal }, prisma, session });
+        const _auth = await fromJournalId(journalId);
+        return includeAuth(getProps, { _auth, prisma, session });
       });
     },
 
@@ -139,17 +176,8 @@ export const Authorization = (
       ) => Promise<Props>,
     ) {
       return wrapResult(async () => {
-        const journal = await fromPostId(postId);
-        const post = {
-          read: journal.read,
-          write: journal.write,
-          id: postId,
-        };
-        return includeAuth(getProps, {
-          _auth: { journal, post },
-          prisma,
-          session,
-        });
+        const _auth = await fromPostId(postId);
+        return includeAuth(getProps, { _auth, prisma, session });
       });
     },
 
@@ -160,33 +188,8 @@ export const Authorization = (
       ) => Promise<Props>,
     ) {
       return wrapResult(async () => {
-        const metric = await db.metric.findUniqueOrThrow({
-          where: { id: metricId },
-          include: {
-            journal: {
-              select: {
-                id: true,
-                isPublic: true,
-                readers: true,
-                owner: true,
-              },
-            },
-          },
-        });
-        const journal = checkJournalAccess(session, metric.journal);
-        return includeAuth(getProps, {
-          _auth: {
-            journal,
-            metric: {
-              id: metric.id,
-              read: journal.read,
-              write: journal.write,
-              metricType: metric.metricSchema.metricType,
-            },
-          },
-          prisma,
-          session,
-        });
+        const _auth = await fromMetricId(metricId);
+        return includeAuth(getProps, { _auth, prisma, session });
       });
     },
     session,
@@ -233,7 +236,10 @@ export function trpcMutation<ParamsZod extends z.AnyZodObject, Props>(
   return protectedProcedure
     .input(validator)
     .mutation(async ({ ctx, input }) => {
-      const result = await fn(Authorization(ctx.db, ctx.session), input as z.infer<ParamsZod>);
+      const result = await fn(
+        Authorization(ctx.db, ctx.session),
+        input as z.infer<ParamsZod>,
+      );
       if (result.error === "authorization_error") {
         throw new TRPCError({
           code: "FORBIDDEN",

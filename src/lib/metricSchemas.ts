@@ -9,7 +9,10 @@ interface MetricMetadata<
   schema: Schema;
   value: Value;
   change: Change;
-  apply(value: z.infer<Value> | null, change: z.infer<Change>): z.infer<Value> | null;
+  apply(
+    value: z.infer<Value> | null,
+    change: z.infer<Change>,
+  ): z.infer<Value> | null;
 }
 
 function makeSchema<
@@ -22,18 +25,19 @@ function makeSchema<
 function scalarSchema<
   Value extends z.ZodTypeAny,
   Schema extends z.AnyZodObject,
->(
-  {value, ...m}: {
-    schema: Schema,
-    value: Value,
-  }
-): MetricMetadata<z.ZodObject<{value: Value}>, Value, Schema> {
+>({
+  value,
+  ...m
+}: {
+  schema: Schema;
+  value: Value;
+}): MetricMetadata<z.ZodObject<{ value: Value }>, Value, Schema> {
   return {
     ...m,
-    value: z.object({value}),
+    value: z.object({ value }),
     change: value,
     apply(value, change) {
-      return {value: change};
+      return { value: change };
     },
   };
 }
@@ -44,6 +48,8 @@ const quillOperation = z.object({
   retain: z.number().or(z.record(z.string(), z.any())).optional(),
   attributes: z.record(z.string(), z.any()).optional(),
 });
+
+export type QuillData = {ops?: Array<z.infer<typeof quillOperation>>};
 
 const schemas = {
   richText: makeSchema({
@@ -80,11 +86,10 @@ const schemas = {
 >;
 
 export type MetricType = keyof typeof schemas;
-export type Metric<MetricSchemaName extends MetricType> =
-{
-  value: z.infer<(typeof schemas)[MetricSchemaName]["value"]> | null,
-  change: z.infer<(typeof schemas)[MetricSchemaName]["change"]>,
-  schema: z.infer<(typeof schemas)[MetricSchemaName]["schema"]>,
+export type Metric<MetricSchemaName extends MetricType> = {
+  value: z.infer<(typeof schemas)[MetricSchemaName]["value"]> | null;
+  change: z.infer<(typeof schemas)[MetricSchemaName]["change"]>;
+  schema: z.infer<(typeof schemas)[MetricSchemaName]["schema"]>;
 };
 
 const validateMetricSchema = z.discriminatedUnion("metricType", [
@@ -95,10 +100,19 @@ const validateMetricSchema = z.discriminatedUnion("metricType", [
 ]);
 
 const validateMetricValue = z.discriminatedUnion("metricType", [
-  z.object({ value: schemas.richText.value, metricType: z.literal("richText") }),
-  z.object({ value: schemas.zeroToTen.value, metricType: z.literal("zeroToTen") }),
+  z.object({
+    value: schemas.richText.value,
+    metricType: z.literal("richText"),
+  }),
+  z.object({
+    value: schemas.zeroToTen.value,
+    metricType: z.literal("zeroToTen"),
+  }),
   z.object({ value: schemas.numeric.value, metricType: z.literal("numeric") }),
-  z.object({ value: schemas.checkbox.value, metricType: z.literal("checkbox") }),
+  z.object({
+    value: schemas.checkbox.value,
+    metricType: z.literal("checkbox"),
+  }),
 ]);
 
 const validateGenericMetricValue = z.union([
@@ -109,10 +123,22 @@ const validateGenericMetricValue = z.union([
 ]);
 
 const validateMetricChange = z.discriminatedUnion("metricType", [
-  z.object({ change: schemas.richText.change, metricType: z.literal("richText") }),
-  z.object({ change: schemas.zeroToTen.change, metricType: z.literal("zeroToTen") }),
-  z.object({ change: schemas.numeric.change, metricType: z.literal("numeric") }),
-  z.object({ change: schemas.checkbox.change, metricType: z.literal("checkbox") }),
+  z.object({
+    change: schemas.richText.change,
+    metricType: z.literal("richText"),
+  }),
+  z.object({
+    change: schemas.zeroToTen.change,
+    metricType: z.literal("zeroToTen"),
+  }),
+  z.object({
+    change: schemas.numeric.change,
+    metricType: z.literal("numeric"),
+  }),
+  z.object({
+    change: schemas.checkbox.change,
+    metricType: z.literal("checkbox"),
+  }),
 ]);
 
 const validateGenericMetricChange = z.union([
@@ -120,27 +146,66 @@ const validateGenericMetricChange = z.union([
   schemas.zeroToTen.change,
   schemas.numeric.change,
   schemas.checkbox.change,
-])
+]);
 
 const validateMetricSchemaAndValue = z.discriminatedUnion("metricType", [
-  z.object({ value: schemas.richText.value.nullable(), schema: schemas.richText.schema, metricType: z.literal("richText") }),
-  z.object({ value: schemas.zeroToTen.value.nullable(), schema: schemas.zeroToTen.schema, metricType: z.literal("zeroToTen") }),
-  z.object({ value: schemas.numeric.value.nullable(), schema: schemas.numeric.schema, metricType: z.literal("numeric") }),
-  z.object({ value: schemas.checkbox.value.nullable(), schema: schemas.checkbox.schema, metricType: z.literal("checkbox") }),
+  z.object({
+    value: schemas.richText.value.nullable(),
+    schema: schemas.richText.schema,
+    metricType: z.literal("richText"),
+  }),
+  z.object({
+    value: schemas.zeroToTen.value.nullable(),
+    schema: schemas.zeroToTen.schema,
+    metricType: z.literal("zeroToTen"),
+  }),
+  z.object({
+    value: schemas.numeric.value.nullable(),
+    schema: schemas.numeric.schema,
+    metricType: z.literal("numeric"),
+  }),
+  z.object({
+    value: schemas.checkbox.value.nullable(),
+    schema: schemas.checkbox.schema,
+    metricType: z.literal("checkbox"),
+  }),
 ]);
 
 const validateMetricSchemaAndValues = z.discriminatedUnion("metricType", [
-  z.object({ values: schemas.richText.value.nullable().array(), schema: schemas.richText.schema, metricType: z.literal("richText") }),
-  z.object({ values: schemas.zeroToTen.value.nullable().array(), schema: schemas.zeroToTen.schema, metricType: z.literal("zeroToTen") }),
-  z.object({ values: schemas.numeric.value.nullable().array(), schema: schemas.numeric.schema, metricType: z.literal("numeric") }),
-  z.object({ values: schemas.checkbox.value.nullable().array(), schema: schemas.checkbox.schema, metricType: z.literal("checkbox") }),
+  z.object({
+    values: schemas.richText.value.nullable().array(),
+    schema: schemas.richText.schema,
+    metricType: z.literal("richText"),
+  }),
+  z.object({
+    values: schemas.zeroToTen.value.nullable().array(),
+    schema: schemas.zeroToTen.schema,
+    metricType: z.literal("zeroToTen"),
+  }),
+  z.object({
+    values: schemas.numeric.value.nullable().array(),
+    schema: schemas.numeric.schema,
+    metricType: z.literal("numeric"),
+  }),
+  z.object({
+    values: schemas.checkbox.value.nullable().array(),
+    schema: schemas.checkbox.schema,
+    metricType: z.literal("checkbox"),
+  }),
 ]);
 
-function updateMetricValue(metricType: MetricType, old: GenericMetricValue | null, change: GenericMetricChange): GenericMetricValue | null {
+function updateMetricValue(
+  metricType: MetricType,
+  old: GenericMetricValue | null,
+  change: GenericMetricChange,
+): GenericMetricValue | null {
   const validatedValue = schemas[metricType].value.nullable().parse(old);
   const validatedChange = schemas[metricType].change.parse(change);
   // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
-  return schemas[metricType].apply(validatedValue as any, validatedChange as never);
+  return schemas[metricType].apply(
+    validatedValue as any,
+    validatedChange as never,
+  );
 }
 
 export const metricSchemas = {
@@ -152,9 +217,11 @@ export const metricSchemas = {
   validateGenericMetricChange,
 
   updateMetricValue,
-}
+};
 
-export type MetricSchemaAndValues = z.infer<typeof validateMetricSchemaAndValues>;
+export type MetricSchemaAndValues = z.infer<
+  typeof validateMetricSchemaAndValues
+>;
 export type MetricSchemaAndValue = z.infer<typeof validateMetricSchemaAndValue>;
 export type MetricSchema = z.infer<typeof validateMetricSchema>;
 export type GenericMetricValue = z.infer<typeof validateGenericMetricValue>;
