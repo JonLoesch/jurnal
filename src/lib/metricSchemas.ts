@@ -47,7 +47,9 @@ const quillOperation = z.object({
 
 const schemas = {
   richText: makeSchema({
-    schema: z.object({}),
+    schema: z.object({
+      headline: z.literal(true).optional(),
+    }),
     value: z.object({
       ops: quillOperation.array().optional(),
     }),

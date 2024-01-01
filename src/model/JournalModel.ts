@@ -108,6 +108,7 @@ export class JournalModel extends Model<["journal"]> {
 const validateMetric = z.discriminatedUnion("operation", [
   z.object({
     operation: z.literal("update"),
+    schema: metricSchemas.validateMetricSchema,
     id: z.string(),
     name: z.string(),
     description: z.string(),
@@ -193,30 +194,33 @@ export class JournalModelWithWritePermissions extends JournalModel {
                 },
               });
         for (const [metricIndex, metricData] of groupData.metrics.entries()) {
-          const metric = metricData.operation === 'create' ?
-          await this.prisma.metric.create({
-            data: {
-              description: metricData.description,
-              name: metricData.name,
-              sortOrder: metricIndex + 1,
-              journalId: this.journalId,
-              metricGroupId: group.id,
-              type: 'deprecated',
-              metricSchema: metricData.schema,
-              id: uuidv4(),
-            }
-          }) : await this.prisma.metric.update({
-            where: {
-              id: metricData.id,
-              journalId: this.journalId,
-            },
-            data: {
-              metricGroupId: group.id,
-              description: metricData.description,
-              name: metricData.name,
-              sortOrder: metricIndex + 1,
-            }
-          });
+          const metric =
+            metricData.operation === "create"
+              ? await this.prisma.metric.create({
+                  data: {
+                    description: metricData.description,
+                    name: metricData.name,
+                    sortOrder: metricIndex + 1,
+                    journalId: this.journalId,
+                    metricGroupId: group.id,
+                    type: "deprecated",
+                    metricSchema: metricData.schema,
+                    id: uuidv4(),
+                  },
+                })
+              : await this.prisma.metric.update({
+                  where: {
+                    id: metricData.id,
+                    journalId: this.journalId,
+                  },
+                  data: {
+                    metricGroupId: group.id,
+                    description: metricData.description,
+                    name: metricData.name,
+                    sortOrder: metricIndex + 1,
+                    metricSchema: metricData.schema,
+                  },
+                });
           updatedMetricIds.push(metric.id);
         }
         updatedGroupIds.push(group.id);
@@ -229,8 +233,8 @@ export class JournalModelWithWritePermissions extends JournalModel {
           journalId: this.journalId,
           id: {
             notIn: updatedGroupIds,
-          }
-        }
+          },
+        },
       });
       await this.prisma.metric.updateMany({
         data: {
@@ -240,8 +244,8 @@ export class JournalModelWithWritePermissions extends JournalModel {
           journalId: this.journalId,
           id: {
             notIn: updatedMetricIds,
-          }
-        }
+          },
+        },
       });
     });
     //   ...(metricGroups?.reduce<PrismaPromise<unknown>[]>(

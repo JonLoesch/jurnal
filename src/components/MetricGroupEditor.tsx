@@ -187,20 +187,21 @@ const MetricGroup: FC<
     <div className="card bg-base-300 shadow-xl" ref={setNodeRef}>
       <div className="card-body">
         <div className="card-title">
-          
-        <input
-          type="text"
-          value={props.name}
-          className="input input-bordered input-ghost w-48 flex-grow"
-          onChange={(e) => props.setMetricGroup({ ...props, name: e.target.value })}
-        />
-        <textarea
-          value={props.description}
-          className="textarea textarea-bordered textarea-ghost flex-shrink flex-grow-[2] basis-96 max-md:hidden"
-          onChange={(e) =>
-            props.setMetricGroup({ ...props, description: e.target.value })
-          }
-        />
+          <input
+            type="text"
+            value={props.name}
+            className="input input-bordered input-ghost shrink grow basis-48 min-w-0"
+            onChange={(e) =>
+              props.setMetricGroup({ ...props, name: e.target.value })
+            }
+          />
+          <textarea
+            value={props.description}
+            className="textarea textarea-bordered textarea-ghost shrink grow-[2] basis-96 max-md:hidden min-w-0"
+            onChange={(e) =>
+              props.setMetricGroup({ ...props, description: e.target.value })
+            }
+          />
         </div>
         <SortableContext
           items={props.metrics.map((m) => m.dndID)}
@@ -253,7 +254,10 @@ const MetricGroup: FC<
           >
             Add <ChatBubbleBottomCenterIcon className="h-4 w-4" />
           </div>
-          <div className="btn btn-error btn-outline" onClick={props.deleteMetricGroup}>
+          <div
+            className="btn btn-error btn-outline"
+            onClick={props.deleteMetricGroup}
+          >
             <TrashIcon className="h-4 w-4" /> routine
           </div>
         </div>
@@ -290,29 +294,54 @@ const Metric: FC<
 
   return (
     <div ref={setNodeRef} {...attributes} style={style}>
-      <div className="flex flex-row items-center justify-between gap-2">
-        <div className="mr-2 inline-block h-6 w-6" {...listeners}>
+      <div className="grid grid-cols-[1.5rem_1fr_2fr_1.5rem] gap-2">
+        <div className="col-start-1" {...listeners}>
           <Icon />
         </div>
+        {/* <input className="input w-0" value={props.name}/> */}
+        {/* <span className="textarea"> {props.description}</span> */}
+        {/* <textarea className="textarea" value={props.description}/> */}
         <input
           type="text"
           value={props.name}
-          className="input input-bordered input-ghost w-48 flex-grow"
+          className="input input-bordered input-ghost col-start-2 max-md:col-end-4 min-w-0"
           onChange={(e) => props.setMetric({ ...props, name: e.target.value })}
         />
         <textarea
           value={props.description}
-          className="textarea textarea-bordered textarea-ghost flex-shrink flex-grow-[2] basis-96 max-md:hidden"
+          className="textarea textarea-bordered textarea-ghost col-start-3 col-end-4 max-md:col-start-2"
           onChange={(e) =>
             props.setMetric({ ...props, description: e.target.value })
           }
         />
         <div
-          className="ml-2 h-6 w-6 flex-shrink-0 hover:text-error"
+          className="col-start-4 row-start-1 hover:text-error"
           onClick={props.deleteMetric}
         >
           <TrashIcon />
         </div>
+        {props.schema.metricType === "richText" && (
+          <>
+            <label className="label cursor-pointer col-start-2 col-end-4">
+              <span className="label-text">Headline</span>
+              <input
+                type="checkbox"
+                className="checkbox"
+                checked={props.schema.headline ?? false}
+                onChange={(e) =>
+                  props.setMetric({
+                    ...props,
+                    schema: {
+                      ...props.schema,
+                      headline: e.target.checked ? true : undefined,
+                      metricType: "richText",
+                    },
+                  })
+                }
+              />
+            </label>
+          </>
+        )}
       </div>
     </div>
   );
