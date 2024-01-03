@@ -40,10 +40,11 @@ export const ClientImpl_WYSIWYG: FC<{
                       { indent: "-1" },
                       { indent: "+1" },
                     ],
-                    ["link", "image"],
+                    ["link"],
                     ["clean"],
                   ],
                 },
+                formats,
               })
             : null;
             if (props.editorRef) {
@@ -90,3 +91,27 @@ export const ClientImpl_WYSIWYG: FC<{
     </div>
   );
 };
+
+const formats = [
+  'background',
+  'bold',
+  'color',
+  'font',
+  'code',
+  'italic',
+  'link',
+  'size',
+  'strike',
+  'script',
+  'underline',
+  'blockquote',
+  'header',
+  'indent',
+  'list',
+  'align',
+  'direction',
+  'code-block',
+  'formula'
+  // 'image'
+  // 'video'
+];
