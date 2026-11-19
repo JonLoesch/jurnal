@@ -25,7 +25,11 @@ Decisions so far (planning stage, nothing built):
 - **Notification channels are pluggable:** v2.0 web push only (easiest); design for email, SMS, voice, Discord, Slack later. Absence detection runs server-side.
 - **Invites:** invite links preferred as the easiest flow; approval-based follows undecided.
 - **Therapy-adjacent features are 3.0 or later.** Exercise/diet journaling is v2. (Not legal advice: consumer fitness apps are generally outside HIPAA, but the FTC Health Breach Notification Rule can apply.)
-- **Absence alerts and consent:** he argues an idle trigger on a feed is no different from access to the feed (RSS analogy). Working design: a trigger may only use data its owner can already read, and "may set alerts" is a permission in the share grant. Open: whether messages sent to the subject need separate acceptance.
+- **Absence alerts:** an alert only ever notifies the follower who set it (never the subject); anything the follower then does about it (nudge, call) happens outside the app. A trigger may only use data its owner can already read, with resolution capped at what they can see; "may set alerts" is a permission in the share grant, off by default. Subjects can see which alerts exist on them. Social pressure for positive change is the deliberate goal; he is unsure it's a good idea, so keep it for now and be ready to remove it.
+- **Public = link-only** (no discoverable/browsable public jurnals for now).
+- **Ownership must not block organizations later:** a jurnal's owner should be abstract (user now, org possibly later). Multi-writer shared jurnals are not v2.0 scope but the data model must allow them.
+- **Photos live inside a rich-text field** and inherit its access control. No special mood-while-eating feature (a free-text metric covers it).
+- Entry/metric/jurnal-level visibility granularity: undecided until the data-model discussion.
 
 **Why:** Jonathan keeps missing diet journal entries; the app should record and remind. See [[project-context]].
 **How to apply:** treat these as settled unless he reopens them; open items are the stack choice, data model and the market survey result.
