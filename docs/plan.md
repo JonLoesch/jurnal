@@ -146,8 +146,8 @@ self reminders come before sharing.
 
 ## 8. CI/CD and open source
 
-- **Repo:** public on GitHub, with the license chosen before the first push. My suggestion is AGPL-3.0
-  (keeps hosted forks open; wger uses it); MIT is the simpler alternative. Needs his call.
+- **Repo:** public on GitHub, with the license chosen before the first push. Decided: AGPL-3.0
+  (keeps hosted forks open; wger uses it).
 - **Secrets:** never committed. They live in Vercel and GitHub settings, with a `.env.example` listing
   names only.
 - **On every pull request** (GitHub Actions): lint, type check, unit tests (including the access
