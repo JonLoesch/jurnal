@@ -19,6 +19,13 @@ Decisions so far (planning stage, nothing built):
 - **Privacy:** no end-to-end encryption for now. If it ever goes public, it must clearly state it is NOT an appropriate platform for private health data / messaging.
 - **Platform:** PWA first (Android user), later Google Play (even unlisted) via a wrapper. Postgres is fine; other stack is my pick (he won't read or write much code), prefer well-established choices.
 - Hosting: a cloud free tier. Possible later: free public app with donations.
+- **Multiple jurnals per user** (fitness, chess, coding...), each with its own metrics, frequencies and sharing: private diary, shared with a close group, partly shared with a select group, partly public. Comment read/write visibility is a separate setting. Expect many access-control settings; some visibility may be per entry or per metric.
+- **Frequencies:** "N times a week", "daily at these 3 times", shortcuts like "meal times" and "weekdays".
+- **Photo upload is in v2.0**; macro estimation from photos/text/voice is v2.1+ (LLM vision + nutrition database, editable draft with ranges). He doesn't much care about macro accuracy (open question).
+- **Notification channels are pluggable:** v2.0 web push only (easiest); design for email, SMS, voice, Discord, Slack later. Absence detection runs server-side.
+- **Invites:** invite links preferred as the easiest flow; approval-based follows undecided.
+- **Therapy-adjacent features are 3.0 or later.** Exercise/diet journaling is v2. (Not legal advice: consumer fitness apps are generally outside HIPAA, but the FTC Health Breach Notification Rule can apply.)
+- **Absence alerts and consent:** he argues an idle trigger on a feed is no different from access to the feed (RSS analogy). Working design: a trigger may only use data its owner can already read, and "may set alerts" is a permission in the share grant. Open: whether messages sent to the subject need separate acceptance.
 
 **Why:** Jonathan keeps missing diet journal entries; the app should record and remind. See [[project-context]].
 **How to apply:** treat these as settled unless he reopens them; open items are the stack choice, data model and the market survey result.
