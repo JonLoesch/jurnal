@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getDb } from "@/db/client";
 import { requireAccountId } from "@/server/session";
 import { requireOwner } from "@/server/gate";
+import { orNotFound } from "@/server/page";
 import { listAlertsOnMyJurnal } from "@/server/alerts";
 import { listGrants, listInvites, sharingWarnings } from "@/server/sharing";
 import { Flash, button, card, input, linkButton } from "../../../_components";
@@ -25,7 +26,7 @@ export default async function SharingPage({
   const { error, invite } = await searchParams;
   const accountId = await requireAccountId();
   const db = getDb();
-  const { jurnal, allSections, allMetrics } = await requireOwner(db, accountId, id);
+  const { jurnal, allSections, allMetrics } = await orNotFound(requireOwner(db, accountId, id));
   const [grants, invites, alerts, warnings] = await Promise.all([
     listGrants(db, accountId, id),
     listInvites(db, accountId, id),

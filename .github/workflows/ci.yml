@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: jurnal
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U jurnal"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgres://jurnal@localhost:5432/jurnal_test
+      E2E_DATABASE_URL: postgres://jurnal@localhost:5432/jurnal_e2e
+      AUTH_SECRET: ci-only-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Create test databases
+        run: |
+          psql -h localhost -U jurnal -d postgres -c 'create database jurnal_test'
+          psql -h localhost -U jurnal -d postgres -c 'create database jurnal_e2e'
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - name: Unit and integration tests
+        run: pnpm test
+      - name: Build
+        run: pnpm exec next build
+      - name: Migrate the end-to-end database
+        run: pnpm db:migrate
+        env:
+          DATABASE_URL: postgres://jurnal@localhost:5432/jurnal_e2e
+      - name: End-to-end tests (Chrome)
+        run: pnpm e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: test-results/

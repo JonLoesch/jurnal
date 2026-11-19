@@ -14,6 +14,7 @@ import {
 } from "./actions";
 import { describeSchedule } from "@/lib/formvalues";
 import { dateIn } from "@/lib/time";
+import { orNotFound } from "@/server/page";
 
 export async function JurnalView({
   jurnalId,
@@ -25,7 +26,7 @@ export async function JurnalView({
   searchParams: { error?: string; from?: string; firing?: string };
 }) {
   const db = getDb();
-  const { loaded, feed } = await getFeed(db, jurnalId, viewer);
+  const { loaded, feed } = await orNotFound(getFeed(db, jurnalId, viewer));
   const { access, jurnal, allSections, allMetrics, subject } = loaded;
   const isOwner = access.role === "owner";
   const sections = allSections.filter((s) => access.sectionIds.has(s.id) && !s.archivedAt);
@@ -54,7 +55,7 @@ export async function JurnalView({
         <nav className="flex gap-4 text-sm">
           {viewer.accountId && <Link href={`/j/${jurnalId}/trends`} className={linkButton}>Trends</Link>}
           {isOwner && <Link href={`/j/${jurnalId}/sharing`} className={linkButton}>Sharing</Link>}
-          {isOwner && <Link href={`/j/${jurnalId}/settings`} className={linkButton}>Settings</Link>}
+          {isOwner && <Link href={`/j/${jurnalId}/settings`} className={linkButton}>Manage</Link>}
           {viewer.accountId && <a href={`/api/jurnals/${jurnalId}/export?format=csv`} className={linkButton}>Export</a>}
         </nav>
       </div>
@@ -82,7 +83,7 @@ export async function JurnalView({
                     No metrics yet. <Link className="underline" href={`/j/${jurnalId}/settings`}>Choose what to track.</Link>
                   </p>
                 ) : (
-                  <form action={createEntryAction} encType="multipart/form-data" className="mt-3 space-y-3">
+                  <form action={createEntryAction} className="mt-3 space-y-3">
                     <input type="hidden" name="jurnalId" value={jurnalId} />
                     <input type="hidden" name="sectionId" value={s.id} />
                     {sm.map((m) => (
@@ -143,7 +144,7 @@ export async function JurnalView({
                   {isOwner && (
                     <details className="mt-3 text-sm">
                       <summary className="cursor-pointer text-neutral-500">Edit</summary>
-                      <form action={updateEntryAction} encType="multipart/form-data" className="mt-2 space-y-2">
+                      <form action={updateEntryAction} className="mt-2 space-y-2">
                         <input type="hidden" name="jurnalId" value={jurnalId} />
                         <input type="hidden" name="entryId" value={e.id} />
                         {allMetrics.filter((m) => m.sectionId === e.sectionId && (!m.archivedAt || e.values.some((v) => v.metricId === m.id))).map((m) => (
@@ -163,14 +164,14 @@ export async function JurnalView({
                   {(e.comments.length > 0 || access.commentPerm === "write") && (
                     <div className="mt-3 space-y-1 border-t border-neutral-200 pt-2 text-sm dark:border-neutral-800">
                       {e.comments.map((c) => (
-                        <p key={c.id}><strong>{c.authorName}</strong>: {c.body}
+                        <div key={c.id}><strong>{c.authorName}</strong>: {c.body}
                           {viewer.accountId && (
                             <form action={deleteCommentAction} className="ml-2 inline">
                               <input type="hidden" name="jurnalId" value={jurnalId} /><input type="hidden" name="commentId" value={c.id} />
                               <button className="text-xs text-neutral-400 underline">remove</button>
                             </form>
                           )}
-                        </p>
+                        </div>
                       ))}
                       {access.commentPerm === "write" && (
                         <form action={addCommentAction} className="flex gap-2">

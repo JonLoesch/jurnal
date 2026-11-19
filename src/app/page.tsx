@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { grants, jurnals } from "@/db/schema";
+import { accounts, grants, jurnals } from "@/db/schema";
 import { currentAccountId } from "@/server/session";
 import { listMyJurnals } from "@/server/journal";
 import { Flash, button, card, input } from "./_components";
 import { createJurnalAction, leaveJurnalAction } from "./actions";
+import { TimezoneNudge } from "./timezone-nudge";
 
 export default async function Home({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const { error } = await searchParams;
@@ -20,6 +21,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ e
     );
   }
   const db = getDb();
+  const [me] = await db.select().from(accounts).where(eq(accounts.id, accountId));
   const mine = await listMyJurnals(db, accountId);
   const following = await db
     .select({ id: jurnals.id, name: jurnals.name })
@@ -30,6 +32,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ e
   return (
     <div className="space-y-8">
       <Flash error={error} />
+      <TimezoneNudge current={me.timezone} name={me.name} weekStart={me.weekStart} />
       <section>
         <h2 className="mb-3 text-lg font-semibold">Your jurnals</h2>
         <ul className="mb-4 space-y-2">

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getDb } from "@/db/client";
 import { currentAccountId } from "@/server/session";
 import { loadForViewer } from "@/server/gate";
+import { orNotFound } from "@/server/page";
 import { getMetricSeries } from "@/server/journal";
 import { LineChart, card, linkButton } from "../../../_components";
 import { redirect } from "next/navigation";
@@ -14,7 +15,7 @@ export default async function TrendsPage({ params }: { params: Promise<{ id: str
   if (!accountId) redirect("/login");
   const db = getDb();
   const viewer = { accountId };
-  const { jurnal, allMetrics, access } = await loadForViewer(db, id, viewer);
+  const { jurnal, allMetrics, access } = await orNotFound(loadForViewer(db, id, viewer));
   const metrics = allMetrics.filter((m) => access.metricIds.has(m.id) && NUMERIC.includes(m.fieldType));
   const series = await Promise.all(metrics.map((m) => getMetricSeries(db, id, m.id, viewer)));
   return (

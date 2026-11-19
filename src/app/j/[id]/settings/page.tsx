@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getDb } from "@/db/client";
 import { requireAccountId } from "@/server/session";
 import { requireOwner } from "@/server/gate";
+import { orNotFound } from "@/server/page";
 import { listMyRules } from "@/server/alerts";
 import { FIELD_TYPES } from "@/lib/fieldtypes";
 import { describeSchedule } from "@/lib/formvalues";
@@ -34,7 +35,7 @@ export default async function SettingsPage({ params, searchParams }: { params: P
   const { error } = await searchParams;
   const accountId = await requireAccountId();
   const db = getDb();
-  const { jurnal, allSections, allMetrics } = await requireOwner(db, accountId, id);
+  const { jurnal, allSections, allMetrics } = await orNotFound(requireOwner(db, accountId, id));
   const rules = (await listMyRules(db, accountId)).filter((r) => r.rule.jurnalId === id && r.rule.kind === "self");
   const multi = allSections.length > 1;
 

@@ -128,6 +128,11 @@ describe("what a follower can see", () => {
     expect(diary.id).toBeTruthy();
   });
 
+  it("treats a malformed id as not found rather than failing", async () => {
+    const { ann } = await setup();
+    await expect(getFeed(db, "not-a-uuid", { accountId: ann.id })).rejects.toThrow(/Not found/);
+  });
+
   it("makes strangers see nothing, not even that the jurnal exists", async () => {
     const { carol, jurnal } = await setup();
     await expect(getFeed(db, jurnal.id, { accountId: carol.id })).rejects.toThrow(/Not found/);

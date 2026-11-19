@@ -21,7 +21,10 @@ export type Loaded = {
  * (feed, trends, export, comments, alerts) starts here. Throws notFound if the viewer has no access,
  * so a jurnal's existence is not revealed to strangers.
  */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function loadForViewer(db: Db, jurnalId: string, viewer: Viewer): Promise<Loaded> {
+  if (!UUID.test(jurnalId)) throw notFound(); // a malformed id in a URL is just "not found"
   const [row] = await db
     .select({ jurnal: jurnals, owner: owners })
     .from(jurnals)

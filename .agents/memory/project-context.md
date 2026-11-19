@@ -18,3 +18,8 @@ the thoughts themselves, and they get loaded into the app's DB once it exists.
 scope per `~/notes/areas/me/README.md` (check existing tools, propose a smallest test). Open
 questions as of 2026-11-19: capture method, where it runs, and whether the coach's sheet is still the
 destination.
+
+**Build state (2026-11-19):** M0-M5 of `docs/plan.md` were built locally in one session on branch
+`build/v2-core` (Next.js 16, Drizzle, local Postgres on port 54329 via `scripts/db-start.sh`, Playwright with
+system Chrome). Hosted pieces (Vercel, Neon, Google OAuth, Cloudflare cron, real push on a phone) are not
+set up; Jonathan does those later.

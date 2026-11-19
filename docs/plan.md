@@ -1,6 +1,6 @@
 # Jurnal v2: plan
 
-Status: draft for review, 2026-11-19. Nothing is built. Decisions behind this plan are in
+Status (2026-11-19, evening): M0 to M5 are built and tested locally (see "Build status" at the end). Nothing is deployed. Decisions behind this plan are in
 `.agents/memory/v2-requirements.md`; prior art is in `.agents/memory/market-survey.md`.
 
 ## 1. What we're building
@@ -161,3 +161,19 @@ self reminders come before sharing.
 - **The reminder trigger** (Cloudflare Worker) is a small separate piece with its own deploy step in
   Actions.
 - **Note:** commits made by agents stay local; he pushes, and CI runs from his pushes.
+
+## 9. Build status (2026-11-19)
+
+Built on branch `build/v2-core`, tested locally only (93 unit/integration tests, 3 browser tests).
+
+| Milestone | State |
+|---|---|
+| M0 foundations | Done except the hosted pieces: Next.js 16, Drizzle migrations, Auth.js (Google plus a local-only dev login), GitHub Actions CI, Dependabot, AGPL license. Vercel, Neon and Google OAuth are not set up. |
+| M1 solo journaling | Done: jurnals, hidden default section, sections, all field types, backfill, feed, archive, photos (local disk). Notes are plain text plus photos: no rich-text editor yet. |
+| M2 trends and export | Done: per-metric chart with trend line, CSV and JSON export. |
+| M3 self reminders | Done in code: rules, scheduler endpoint, Web Push sender, snooze, dismiss, overdue banner, `?from=alert` toast. Not tested on a phone, and no real push has been sent. |
+| M4 sharing | Done: invites (7-day, single-use default), grants, protected sections and metrics, precision per grant, public link, comments, warnings. |
+| M5 follower alerts | Done: permission flag, follower rules, owner transparency list. |
+
+Not done yet: hosting and secrets, the per-minute scheduler trigger, object storage for photos, a
+rich-text editor, the printable workout sheet and the other v2.1 items.
