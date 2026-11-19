@@ -29,7 +29,8 @@ Decisions so far (planning stage, nothing built):
 - **Public = link-only** (no discoverable/browsable public jurnals for now).
 - **Ownership must not block organizations later:** a jurnal's owner should be abstract (user now, org possibly later). Multi-writer shared jurnals are not v2.0 scope but the data model must allow them.
 - **Photos live inside a rich-text field** and inherit its access control. No special mood-while-eating feature (a free-text metric covers it).
-- Entry/metric/jurnal-level visibility granularity: undecided until the data-model discussion.
+- **Access model:** primary case is per-jurnal access. Per-entry visibility is rejected (too confusing). Optional, default-off "protected" flag that needs its own ACL on top of jurnal access; the ACL admin UI warns when a jurnal contains protected items, and the protected item's page warns if anyone with access lacks jurnal access.
+- **Sections** (from v1 experience): a jurnal is divided into sections (e.g. morning / evening of one daily update) that read as ONE chronological blog but have their own frequencies, deadlines and reminders (e.g. morning by 10AM, evening by 9PM); jurnal-wide ones exist too. Protection may belong to sections. UI is jurnal > sections only, no deeper nesting; implementation (recursive or not) is my call.
 
 **Why:** Jonathan keeps missing diet journal entries; the app should record and remind. See [[project-context]].
 **How to apply:** treat these as settled unless he reopens them; open items are the stack choice, data model and the market survey result.
