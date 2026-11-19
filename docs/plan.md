@@ -5,7 +5,7 @@ Status: draft for review, 2026-11-19. Nothing is built. Decisions behind this pl
 
 ## 1. What we're building
 
-A multi-user web app (PWA first, Google Play later) where anyone keeps one or more **jurnals**
+A multi-user web app (PWA; Google Play is a someday item) where anyone keeps one or more **jurnals**
 (fitness, chess, coding...), each with user-defined metrics, schedules and reminders, and shares them
 with chosen people at chosen levels. The distinctive part: followers can be told when something does
 **not** happen, and so can you. Not for private health data; no therapy features before 3.0.
@@ -22,7 +22,8 @@ with chosen people at chosen levels. The distinctive part: followers can be told
 | Scheduler | A per-minute external trigger (e.g. a Cloudflare Worker cron) calling a secured endpoint | Vercel Hobby cron is limited to once a day; verify current limits before building |
 | Photos | Object storage (Cloudflare R2 or Vercel Blob), served only through an ACL-checked route | Free-tier quota is the first limit we'll hit |
 | Tests | Vitest for the access check and rule evaluator, Playwright for flows | Access control is the part that must not be wrong |
-| Hosting | Vercel + Neon | **Check:** Vercel Hobby is for non-commercial use; donations may be a grey area |
+| Hosting | Vercel + Neon, on the default `*.vercel.app` domain | Hobby tier is fine until donations start; we'd move to a paid tier by then |
+| CI/CD | GitHub Actions + Vercel's GitHub integration | See section 8 |
 
 Nothing here is bleeding-edge. Everything with a free-tier caveat is flagged to verify at M0.
 
@@ -123,19 +124,40 @@ self reminders come before sharing.
 - **M4, sharing.** Grants, invite links, link-only public access, the access module and its tests,
   precision per grant, comments, the advanced section and metric ACLs with warnings.
 - **M5, follower alerts.** `can_alert`, follower rules, transparency view.
-- **M6, Play release prep.** Bubblewrap/TWA wrapper, privacy policy, the visible "not for private
-  health data" notice, Play health declaration, then the closed test (12 or more testers for 14 days
-  on a new personal account). Starting the closed test early shortens the wait.
 - **v2.1.** Macro estimates from photo, text or voice (editable draft, ranges, nutrition database);
   printable workout sheet; adherence calendar; extra notification channels.
+- **Later, no date.** Google Play via a TWA wrapper (Bubblewrap). Punted: PWA until further notice. When
+  it comes back: $25 fee, a closed test (12+ testers for 14 days) for a new personal account, a
+  privacy policy and Play's health declaration. A public launch also needs the visible "not for private
+  health data" notice.
 
 ## 7. Risks and decisions to confirm
 
 - **Free-tier limits** (cron frequency, photo storage, Vercel Hobby terms) are unverified: check at M0.
-- **Android push** is best-effort. TWA notification delegation must be tested on real devices.
+- **Android push** is best-effort; the installed PWA must be tested on a real phone at M3.
 - **Health-data rules:** the FTC Health Breach Notification Rule can apply to health apps. Avoid
   medical claims and get a legal read before any clinician features or a public launch.
 - **Abuse:** public links and comments need a way to block and report; keep comments off by default.
 - **Data safety:** no end-to-end encryption in v2.0; say so. Accounts need deletion and export.
-- **Open:** license (open source or not), the final domain and name, default invite expiry,
-  default alert delivery hour, whether a comment applies to an entry or a section.
+- **Decided:** open source (license to confirm: see section 8); name "Jurnal"; domain TBD (vercel.app
+  until at least v2.1); invites expire after 7 days by default (single use unless the owner allows more;
+  always revocable); default alert delivery hour 10AM in the recipient's timezone; comments attach to
+  entries, not sections.
+
+## 8. CI/CD and open source
+
+- **Repo:** public on GitHub, with the license chosen before the first push. My suggestion is AGPL-3.0
+  (keeps hosted forks open; wger uses it); MIT is the simpler alternative. Needs his call.
+- **Secrets:** never committed. They live in Vercel and GitHub settings, with a `.env.example` listing
+  names only.
+- **On every pull request** (GitHub Actions): lint, type check, unit tests (including the access
+  module's table) against a Postgres service container, a production build, and Playwright flows.
+- **Previews:** Vercel builds a preview per PR. Neon can give each PR its own database branch, so
+  migrations are tried on a copy of the schema before they touch production (verify at M0).
+- **On merge to `main`:** Vercel deploys to production, and database migrations run as a step before
+  the new code goes live. A failing migration blocks the deploy.
+- **Branch protection:** `main` requires the CI checks to pass.
+- **Dependencies:** Dependabot (or Renovate) opens update PRs; CI is what lets us merge them safely.
+- **The reminder trigger** (Cloudflare Worker) is a small separate piece with its own deploy step in
+  Actions.
+- **Note:** commits made by agents stay local; he pushes, and CI runs from his pushes.
