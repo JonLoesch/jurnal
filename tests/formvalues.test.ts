@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseValues } from "@/lib/formvalues";
+import { parseSchedule, parseValues } from "@/lib/formvalues";
 
 const form = (o: Record<string, string>) => (n: string) => (n in o ? o[n] : null);
 
@@ -26,5 +26,20 @@ describe("parseValues", () => {
 
   it("passes unparseable numbers through so validation can complain", () => {
     expect(parseValues([{ id: "a", fieldType: "number" }], form({ m_a: "abc" })).a).toBeNaN();
+  });
+});
+
+describe("parseSchedule", () => {
+  it("keeps times typed next to Daily", () => {
+    expect(parseSchedule("daily", "14:40")).toEqual({ count: 1, period: "day", times: ["14:40"] });
+    expect(parseSchedule("", "07:30, 21:00")).toEqual({ count: 2, period: "day", times: ["07:30", "21:00"] });
+  });
+  it("rejects times that contradict the preset", () => {
+    expect(parseSchedule("weekdays", "14:40")).toBe("invalid");
+    expect(parseSchedule("times", "")).toBe("invalid");
+  });
+  it("still reads plain presets", () => {
+    expect(parseSchedule("", "")).toBeNull();
+    expect(parseSchedule("daily", "")).toEqual({ count: 1, period: "day" });
   });
 });

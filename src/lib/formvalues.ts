@@ -49,15 +49,15 @@ import { SHORTCUTS } from "./frequency";
 
 /** Read a schedule from a preset ("daily", "weekdays", "meal times", "weekly:3", "times") plus optional custom times. */
 export function parseSchedule(preset: string | null, customTimes: string | null): Schedule | null | "invalid" {
+  const times = (customTimes ?? "").split(/[,\s]+/).filter(Boolean);
+  // Times typed next to "Daily" (or no preset) mean "daily at these times"; never drop them silently.
+  if (times.length && (!preset || preset === "daily" || preset === "times")) return { count: times.length, period: "day", times };
   if (!preset) return null;
+  if (times.length && preset !== "times") return "invalid";
   if (preset in SHORTCUTS) return SHORTCUTS[preset];
   const weekly = /^weekly:(\d+)$/.exec(preset);
   if (weekly) return { count: Number(weekly[1]), period: "week" };
-  if (preset === "times") {
-    const times = (customTimes ?? "").split(/[,\s]+/).filter(Boolean);
-    return times.length ? { count: times.length, period: "day", times } : "invalid";
-  }
-  return "invalid";
+  return "invalid"; // "times" with no times typed lands here too
 }
 
 export function describeSchedule(s: Schedule | null): string {
