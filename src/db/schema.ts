@@ -239,6 +239,23 @@ export type Schedule = {
   times?: string[]; // "HH:MM" slots; only for period "day", count = times.length
 };
 
+// A personal access token for the MCP endpoint. Only a hash is stored; the token is shown once when made.
+export type TokenScope = "read" | "entries" | "settings";
+export const apiTokens = pgTable("api_token", {
+  id: id(),
+  accountId: uuid("account_id")
+    .notNull()
+    .references(() => accounts.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  tokenHash: text("token_hash").notNull().unique(),
+  prefix: text("prefix").notNull(), // first few characters, to tell tokens apart in the list
+  scopes: jsonb("scopes").$type<TokenScope[]>().notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  createdAt: createdAt(),
+});
+
 export type RuleConfig =
   | { type: "deadline"; deadline: string } // self: log by HH:MM in the subject's timezone
   | { type: "absence"; days: number; notifyAt: string } // follower: N complete silent days

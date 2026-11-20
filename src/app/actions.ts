@@ -12,6 +12,8 @@ import { requireAccountId } from "@/server/session";
 import * as j from "@/server/journal";
 import * as sh from "@/server/sharing";
 import * as al from "@/server/alerts";
+import * as tk from "@/server/tokens";
+import type { TokenScope } from "@/db/schema";
 import { MAX_PHOTO_BYTES, PHOTO_TYPES, storage } from "@/server/storage";
 import { randomUUID } from "node:crypto";
 
@@ -66,6 +68,30 @@ export async function updateAccountAction(f: FormData) {
       weekStart: Number(need(f, "weekStart")),
     });
   });
+}
+
+export type TokenFormState = { token?: string; error?: string };
+
+/** Used with useActionState, so the plain token can be shown once without ever going in a URL. */
+export async function createTokenAction(_prev: TokenFormState, f: FormData): Promise<TokenFormState> {
+  const id = await requireAccountId();
+  try {
+    const { token } = await tk.createToken(db(), id, {
+      name: str(f, "name") ?? "",
+      scopes: f.getAll("scopes").map(String) as TokenScope[],
+      days: Number(str(f, "days") || tk.DEFAULT_TOKEN_DAYS),
+    });
+    revalidatePath("/settings");
+    return { token };
+  } catch (e) {
+    if (e instanceof UserError) return { error: e.message };
+    throw e;
+  }
+}
+
+export async function revokeTokenAction(f: FormData) {
+  const id = await requireAccountId();
+  await run("/settings", () => tk.revokeToken(db(), id, need(f, "tokenId")));
 }
 
 export async function deleteAccountAction(f: FormData) {

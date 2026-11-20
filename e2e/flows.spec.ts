@@ -7,7 +7,7 @@ test.beforeAll(async () => {
   const c = new Client({ connectionString: E2E_DB });
   await c.connect();
   await c.query(
-    'truncate "account","owner","jurnal","section","metric","entry","entry_value","asset","grant","invite","comment","reminder_rule","alert_firing","push_subscription" cascade',
+    'truncate "account","owner","jurnal","section","metric","entry","entry_value","asset","grant","invite","comment","reminder_rule","alert_firing","push_subscription","api_token" cascade',
   );
   await c.end();
 });
@@ -171,4 +171,30 @@ test("account deletion: needs the email typed, then everything is gone", async (
   // Signing in again makes a brand-new, empty account.
   await signIn(page, "Dave");
   await expect(page.getByText("No jurnals yet")).toBeVisible();
+});
+
+test("AI access: make a token in Settings, see it once, and revoke it", async ({ browser }) => {
+  const page = await newUser(browser, "Erin");
+  await page.goto("/settings");
+  await page.getByPlaceholder("Claude Code on my laptop").fill("laptop");
+  await page.getByLabel("Make and edit entries").check();
+  await page.getByRole("button", { name: "Create token" }).click();
+  await expect(page.getByText("Copy this now")).toBeVisible();
+  const token = await page.locator("code").filter({ hasText: /^jt_/ }).first().innerText();
+
+  const res = await page.request.post("/api/mcp", {
+    headers: { authorization: `Bearer ${token}`, accept: "application/json, text/event-stream", "content-type": "application/json" },
+    data: { jsonrpc: "2.0", id: 1, method: "tools/list", params: {} },
+  });
+  expect(res.status()).toBe(200);
+  expect(await res.text()).toContain("append_log_line");
+
+  await page.reload();
+  await expect(page.getByText("Copy this now")).toHaveCount(0); // gone for good
+  await page.getByRole("button", { name: "Revoke" }).click();
+  const after = await page.request.post("/api/mcp", {
+    headers: { authorization: `Bearer ${token}`, accept: "application/json, text/event-stream", "content-type": "application/json" },
+    data: { jsonrpc: "2.0", id: 2, method: "tools/list", params: {} },
+  });
+  expect(after.status()).toBe(401);
 });

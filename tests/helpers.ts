@@ -11,7 +11,7 @@ export async function testDb(): Promise<Db> {
     await migrate(db, { migrationsFolder: "drizzle" });
   }
   await db.execute(
-    sql`truncate table "account", "owner", "jurnal", "section", "metric", "entry", "entry_value", "asset", "grant", "invite", "comment", "reminder_rule", "alert_firing", "push_subscription" restart identity cascade`,
+    sql`truncate table "account", "owner", "jurnal", "section", "metric", "entry", "entry_value", "asset", "grant", "invite", "comment", "reminder_rule", "alert_firing", "push_subscription", "api_token" restart identity cascade`,
   );
   return db;
 }

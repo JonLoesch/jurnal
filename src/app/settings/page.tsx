@@ -4,7 +4,9 @@ import { accounts } from "@/db/schema";
 import { requireAccountId } from "@/server/session";
 import { listMyRules } from "@/server/alerts";
 import { Flash, button, card, input, linkButton } from "../_components";
-import { deleteAccountAction, deleteRuleAction, updateAccountAction } from "../actions";
+import { deleteAccountAction, deleteRuleAction, revokeTokenAction, updateAccountAction } from "../actions";
+import { DEFAULT_TOKEN_DAYS, listTokens } from "@/server/tokens";
+import { TokenForm } from "./token-form";
 import { PushToggle } from "./push-toggle";
 
 export default async function AccountSettings({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
@@ -13,6 +15,8 @@ export default async function AccountSettings({ searchParams }: { searchParams: 
   const db = getDb();
   const [me] = await db.select().from(accounts).where(eq(accounts.id, accountId));
   const rules = await listMyRules(db, accountId);
+  const tokens = await listTokens(db, accountId);
+  const now = new Date();
   const zones = typeof Intl.supportedValuesOf === "function" ? Intl.supportedValuesOf("timeZone") : [me.timezone];
   return (
     <div className="space-y-8">
@@ -44,6 +48,29 @@ export default async function AccountSettings({ searchParams }: { searchParams: 
           ))}
           {rules.length === 0 && <li className="text-neutral-500">None yet.</li>}
         </ul>
+      </section>
+      <section className={`${card} space-y-3`}>
+        <h2 className="font-semibold">AI access (MCP)</h2>
+        <p className="text-sm text-neutral-600">
+          A token lets an AI tool such as Claude Code use your jurnals through the MCP endpoint at <code>/api/mcp</code>. It can do
+          only what you tick, and only with what you can see. Treat it like a password.
+        </p>
+        <ul className="space-y-1 text-sm">
+          {tokens.map((t) => {
+            const live = !t.revokedAt && t.expiresAt > now;
+            return (
+              <li key={t.id} className={`flex flex-wrap items-center gap-3 ${live ? "" : "text-neutral-400 line-through"}`}>
+                <span><b>{t.name}</b> <code>{t.prefix}…</code></span>
+                <span className="text-xs">{t.scopes.join(", ")} · expires {t.expiresAt.toISOString().slice(0, 10)}{t.lastUsedAt ? ` · last used ${t.lastUsedAt.toISOString().slice(0, 10)}` : " · never used"}{t.revokedAt ? " · revoked" : ""}</span>
+                {live && (
+                  <form action={revokeTokenAction}><input type="hidden" name="tokenId" value={t.id} /><button className={linkButton}>Revoke</button></form>
+                )}
+              </li>
+            );
+          })}
+          {tokens.length === 0 && <li className="text-neutral-500">No tokens yet.</li>}
+        </ul>
+        <TokenForm defaultDays={DEFAULT_TOKEN_DAYS} />
       </section>
       <section className={`${card} space-y-2 border-red-300`}>
         <h2 className="font-semibold text-red-800">Delete my account</h2>
