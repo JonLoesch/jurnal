@@ -128,6 +128,11 @@ Mixed
 - [ ] **Coach view polish**: what Briana sees on a phone, how comments read, what an alert says. Needs his feedback after she tries it.
 - [ ] **Try the new-entry digest with a real follower** (built and tested locally): a follower turns on "Tell me about
       new entries" and gets one push a day, at their hour, only if something was added the day before.
+- [ ] **Prompt injection through shared jurnals (think through, not urgent).** An AI session with a token reads
+      text that other people wrote in jurnals shared with the token's owner, and could follow instructions hidden
+      in it. Safe while he only reads his own. Options to weigh: a token flag "only my own jurnals" (maybe the
+      default), marking other people's text as untrusted in tool output, keeping write scopes off tokens that can
+      read shared jurnals, and a warning in Settings. Decide before anyone else is invited.
 - [ ] **Abuse basics before wider invites**: block or report on comments and public links.
 
 AI only
