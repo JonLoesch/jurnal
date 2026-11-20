@@ -17,7 +17,8 @@ conventions in that folder's `CLAUDE.md`). The fitness data is what the app has 
 - **MCP endpoint** (`/api/mcp`) with personal access tokens made in Settings: scopes read / make and edit entries /
   edit jurnals, sections and metrics; one year default expiry (1 to 1095 days); revocable; hashed at rest. Tools go
   through the same access checks as the web app.
-- **Seed** for Jonathan's Fitness and Habits jurnals (`scripts/seed-jurnals.ts`, safe to rerun).
+- **Seed** for Jonathan's Fitness and Habits jurnals (`scripts/seed-jurnals.ts`, safe to rerun). Run against production on 2026-11-20.
+- **History import** (`scripts/import-entries.ts`): his first two days (4 entries, 9 photos) are in production.
 
 ## Release split
 
