@@ -180,7 +180,8 @@ test("AI access: make a token in Settings, see it once, and revoke it", async ({
   await page.getByLabel("Make and edit entries").check();
   await page.getByRole("button", { name: "Create token" }).click();
   await expect(page.getByText("Copy this now")).toBeVisible();
-  const token = (await page.locator("code").filter({ hasText: /^jt_/ }).first().innerText()).trim();
+  // The token is the code block right after the notice; the token list above it shows only a shortened prefix.
+  const token = (await page.getByText("Copy this now").locator("xpath=following-sibling::code[1]").innerText()).trim();
 
   const res = await page.request.post("/api/mcp", {
     headers: { authorization: `Bearer ${token}`, accept: "application/json, text/event-stream", "content-type": "application/json" },
