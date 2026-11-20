@@ -178,7 +178,7 @@ Tested locally and in CI: 101 unit/integration tests and 4 browser tests.
 | M4 sharing | Built and tested locally; not yet tried with a second real account |
 | M5 follower alerts | Built and tested locally; not yet tried with a second real account |
 
-Moved to v2.1: trying sharing and follower alerts with a second real user (check the Google consent
+Moved out of v2.0 (see `docs/todo.md` for the 2.1, 2.2 and 2.3 split): trying sharing and follower alerts with a second real user (check the Google consent
 screen's publishing status first), folding the reminder deadline into the section schedule form, a
 "download everything" export, the rich-text editor, macros, the printable workout sheet, the adherence
 calendar, extra notification channels.

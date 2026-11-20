@@ -42,3 +42,4 @@ Decisions so far (planning stage, nothing built):
 **Why:** Jonathan keeps missing diet journal entries; the app should record and remind. See [[project-context]].
 **How to apply:** treat these as settled unless he reopens them; open items are the stack choice, data model and the market survey result.
 - **Branching (2026-11-20):** this repo uses only `main` (deploys) and `development` (work). No feature branches. Agents commit on `development`; he pushes and merges.
+- **Release split (2026-11-20):** "v2.1" was split into 2.1 Daily driver (his own routine, history import, reminder form rework, workout sets/circuits), 2.2 Share with the coach (second real user, Google Sheet export adapter), 2.3 Smart capture (LLM parsing, macros). The task list, tagged by manual effort, is `docs/todo.md`; it is derived partly from the raw fitness log `~/notes/areas/fitness/jurnal.md`.
