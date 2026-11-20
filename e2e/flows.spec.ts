@@ -218,12 +218,18 @@ test("running log: lines pile up through the day with their times, and a photo r
   await page.getByRole("button", { name: "Add line" }).click();
   await expect(page.getByText("oatmeal and raspberries")).toBeVisible();
 
+  // The log box is always open (not tucked away), and photos can come from the camera or the library, piling up.
   await page.getByPlaceholder("Add a line").fill("cheddar, two ounces ish");
+  const camera = page.locator('input[capture="environment"]').first();
+  await expect(camera).toHaveCount(1);
   await page.locator('input[type="file"]').first().setInputFiles("public/icon-192.png");
+  await expect(page.getByText("1 photo attached")).toBeVisible();
+  await camera.setInputFiles("public/icon-512.png");
+  await expect(page.getByText("2 photos attached")).toBeVisible();
   await page.getByRole("button", { name: "Add line" }).click();
   await expect(page.getByText("cheddar, two ounces ish")).toBeVisible();
   await expect(page.getByText("oatmeal and raspberries")).toBeVisible(); // still there: one day, one entry
-  await expect(page.locator("main img").first()).toBeVisible();
+  await expect(page.locator("main img")).toHaveCount(2);
   await expect(page.getByText(/\d{1,2}:\d{2}\s?[AP]M/).first()).toBeVisible();
 
   await page.getByRole("button", { name: "remove" }).first().click();

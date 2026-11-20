@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 const MAX_EDGE = 1600;
 const TOTAL_LIMIT = 4 * 1024 * 1024; // Vercel rejects request bodies over 4.5 MB
@@ -23,26 +23,57 @@ async function shrink(file: File): Promise<File> {
   }
 }
 
+const trigger = "cursor-pointer rounded border border-neutral-400 px-2 py-1 text-xs hover:bg-neutral-100 dark:hover:bg-neutral-800";
+
+/**
+ * Attach photos: take one with the camera or pick from the library, as many times as you like. Photos pile up
+ * in a hidden input that carries them with the form.
+ */
 export function PhotoInput({ name }: { name: string }) {
+  const [files, setFiles] = useState<File[]>([]);
   const [note, setNote] = useState("");
+  const kept = useRef<File[]>([]);
+  const real = useRef<HTMLInputElement>(null);
+
+  function keep(next: File[]) {
+    kept.current = next;
+    const dt = new DataTransfer();
+    next.forEach((f) => dt.items.add(f));
+    if (real.current) real.current.files = dt.files;
+    setFiles(next);
+  }
+
+  async function add(el: HTMLInputElement) {
+    const added = await Promise.all(Array.from(el.files ?? []).map(shrink));
+    el.value = ""; // so the same photo can be chosen again
+    const next = [...kept.current, ...added];
+    if (next.length > 10 || next.reduce((n, f) => n + f.size, 0) > TOTAL_LIMIT) {
+      setNote("That's too much at once: save these first, then add more.");
+      return;
+    }
+    setNote("");
+    keep(next);
+  }
+
   return (
-    <div>
-      <input
-        type="file"
-        name={name}
-        accept="image/*"
-        multiple
-        className="text-xs"
-        onChange={async (e) => {
-          const input = e.currentTarget;
-          const files = await Promise.all(Array.from(input.files ?? []).map(shrink));
-          const dt = new DataTransfer();
-          files.forEach((f) => dt.items.add(f));
-          input.files = dt.files;
-          const total = files.reduce((n, f) => n + f.size, 0);
-          setNote(total > TOTAL_LIMIT ? "Too many photos at once: add fewer, or add the rest in a second save." : "");
-        }}
-      />
+    <div className="space-y-1">
+      <div className="flex flex-wrap items-center gap-2">
+        <label className={trigger}>
+          Choose photos
+          <input type="file" accept="image/*" multiple className="sr-only" onChange={(e) => void add(e.currentTarget)} />
+        </label>
+        <label className={trigger}>
+          Take a photo
+          <input type="file" accept="image/*" capture="environment" className="sr-only" onChange={(e) => void add(e.currentTarget)} />
+        </label>
+        {files.length > 0 && (
+          <span className="text-xs text-neutral-500">
+            {files.length} photo{files.length === 1 ? "" : "s"} attached{" "}
+            <button type="button" className="underline" onClick={() => keep([])}>clear</button>
+          </span>
+        )}
+      </div>
+      <input ref={real} type="file" name={name} multiple className="hidden" tabIndex={-1} aria-hidden />
       {note && <p className="text-xs text-red-700">{note}</p>}
     </div>
   );

@@ -12,7 +12,7 @@ export const FIELD_TYPES: { type: FieldType; label: string }[] = [
   { type: "timeofday", label: "Time of day" },
   { type: "duration", label: "Duration (minutes)" },
   { type: "sets", label: "Exercise sets (reps and weight)" },
-  { type: "log", label: "Running log (timestamped lines you add to)" },
+  { type: "log", label: "Log (timestamped lines you add to)" },
 ];
 
 export type Checked = { ok: true; value: unknown; num: number | null } | { ok: false; error: string };
