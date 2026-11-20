@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import type { Db } from "@/db/client";
-import { addMetric, addSection, createEntry, createJurnal, deleteEntry, exportJurnal, getFeed, getMetricSeries, toCsv, updateEntry, updateMetric, updateSection } from "@/server/journal";
+import { addMetric, addSection, appendLogLine, createEntry, createJurnal, deleteEntry, removeLogLine, exportJurnal, getFeed, getMetricSeries, toCsv, updateEntry, updateMetric, updateSection } from "@/server/journal";
 import { createInvite, redeemInvite } from "@/server/sharing";
 import { makeAccount, testDb } from "./helpers";
 
@@ -124,5 +124,78 @@ describe("entries", () => {
     expect(feed[0].effectiveTime).toBeUndefined();
     expect(feed[0].addedAt).toBeUndefined();
     expect(JSON.stringify(feed)).not.toContain("10:30");
+  });
+});
+
+describe("running logs", () => {
+  async function logSetup() {
+    const { ann, jurnal, section } = await setup();
+    const diet = await addMetric(db, ann.id, section.id, { name: "Diet", fieldType: "log" });
+    return { ann, jurnal, section, diet };
+  }
+  const feedOf = async (jurnalId: string, accountId: string) => (await getFeed(db, jurnalId, { accountId })).feed;
+
+  it("appends timestamped lines to one entry per day, and creates the entry on the first line", async () => {
+    const { ann, jurnal, section, diet } = await logSetup();
+    await appendLogLine(db, ann.id, diet.id, { text: "oatmeal and raspberries" }, new Date("2026-11-20T14:10:00Z"));
+    await appendLogLine(db, ann.id, diet.id, { text: "  cheddar, two ounces ish " }, new Date("2026-11-20T15:21:00Z"));
+    const feed = await feedOf(jurnal.id, ann.id);
+    expect(feed).toHaveLength(1);
+    expect(feed[0].sectionId).toBe(section.id);
+    const lines = (feed[0].values[0].value as { lines: { at: string; text: string }[] }).lines;
+    expect(lines.map((l) => [l.at, l.text])).toEqual([
+      ["2026-11-20T14:10:00.000Z", "oatmeal and raspberries"],
+      ["2026-11-20T15:21:00.000Z", "cheddar, two ounces ish"],
+    ]);
+  });
+
+  it("starts a new entry on another day, and can backfill a day", async () => {
+    const { ann, jurnal, diet } = await logSetup();
+    await appendLogLine(db, ann.id, diet.id, { text: "today" }, new Date("2026-11-20T14:00:00Z"));
+    await appendLogLine(db, ann.id, diet.id, { text: "yesterday, forgot", effectiveDate: "2026-11-19" }, new Date("2026-11-20T14:05:00Z"));
+    expect((await feedOf(jurnal.id, ann.id)).map((e) => e.effectiveDate)).toEqual(["2026-11-20", "2026-11-19"]);
+    await expect(appendLogLine(db, ann.id, diet.id, { text: "x", effectiveDate: "2026-11-21" }, new Date("2026-11-20T14:05:00Z"))).rejects.toThrow(/future/);
+  });
+
+  it("needs text or a photo, an owner, and a log metric", async () => {
+    const { ann, section, note, diet } = await logSetup().then(async (s) => ({ ...s, note: (await getFeed(db, s.jurnal.id, { accountId: s.ann.id })).loaded.allMetrics.find((m) => m.name === "Note")! }));
+    await expect(appendLogLine(db, ann.id, diet.id, { text: "   " })).rejects.toThrow(/Write something/);
+    await expect(appendLogLine(db, ann.id, note.id, { text: "x" })).rejects.toThrow(/running log/);
+    const bob = await makeAccount(db, "Bob");
+    await expect(appendLogLine(db, bob.id, diet.id, { text: "x" })).rejects.toThrow(/Not found/);
+    expect(section.id).toBeTruthy();
+  });
+
+  it("keeps photos with the line and removes a line cleanly", async () => {
+    const { ann, jurnal, diet } = await logSetup();
+    const { entryId, line } = await appendLogLine(db, ann.id, diet.id, { text: "lunch", photos: [{ key: "k1", contentType: "image/png", bytes: 3 }] });
+    expect(line.assetIds).toHaveLength(1);
+    const second = await appendLogLine(db, ann.id, diet.id, { text: "snack" });
+    await removeLogLine(db, ann.id, entryId, diet.id, line.id);
+    const lines = ((await feedOf(jurnal.id, ann.id))[0].values[0].value as { lines: { id: string }[] }).lines;
+    expect(lines.map((l) => l.id)).toEqual([second.line.id]);
+    await removeLogLine(db, ann.id, entryId, diet.id, second.line.id);
+    expect((await feedOf(jurnal.id, ann.id))[0].values).toEqual([]); // the last line takes the value with it
+  });
+
+  it("an edit to the entry's other fields leaves the log alone", async () => {
+    const { ann, jurnal, section, weight, diet } = await logSetup().then(async (s) => ({ ...s, weight: (await getFeed(db, s.jurnal.id, { accountId: s.ann.id })).loaded.allMetrics.find((m) => m.name === "Weight")! }));
+    const e = await createEntry(db, ann.id, section.id, { values: { [weight.id]: 80 } }, new Date("2026-11-20T14:00:00Z"));
+    await appendLogLine(db, ann.id, diet.id, { text: "breakfast" }, new Date("2026-11-20T14:30:00Z"));
+    await updateEntry(db, ann.id, e.id, { values: { [weight.id]: 81 } }, new Date("2026-11-20T15:00:00Z"));
+    const values = (await feedOf(jurnal.id, ann.id))[0].values;
+    expect(values.map((v) => v.metricId).sort()).toEqual([diet.id, weight.id].sort());
+    expect(values.find((v) => v.metricId === weight.id)?.value).toBe(81);
+  });
+
+  it("hides the time of each line from day-precision followers", async () => {
+    const { ann, jurnal, diet } = await logSetup();
+    const bob = await makeAccount(db, "Bob");
+    await redeemInvite(db, bob.id, await createInvite(db, ann.id, jurnal.id));
+    await appendLogLine(db, ann.id, diet.id, { text: "oatmeal" }, new Date("2026-11-20T14:10:00Z"));
+    const seen = (await feedOf(jurnal.id, bob.id))[0].values[0].value as { lines: { at?: string; text: string }[] };
+    expect(seen.lines.map((l) => l.text)).toEqual(["oatmeal"]);
+    expect(JSON.stringify(seen)).not.toContain("14:10");
+    expect(seen.lines[0].at).toBeUndefined();
   });
 });

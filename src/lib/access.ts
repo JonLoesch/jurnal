@@ -108,6 +108,14 @@ export type EntryView = {
   updatedAt?: Date;
 };
 
+/** A log line's timestamp is as fine as an entry's added time: day-precision viewers don't get it. */
+export function viewValue(access: Access, fieldType: string, value: unknown): unknown {
+  if (fieldType !== "log" || access.precision === "time") return value;
+  const lines = (value as { lines?: { at?: string }[] } | null)?.lines;
+  if (!Array.isArray(lines)) return value;
+  return { ...(value as object), lines: lines.map((l) => ({ ...l, at: undefined })) };
+}
+
 /** Drop entries in hidden sections, and strip anything finer than the viewer's precision. */
 export function viewEntries(access: Access, entries: EntryRow[]): EntryView[] {
   return entries

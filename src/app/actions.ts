@@ -223,6 +223,33 @@ export async function createEntryAction(f: FormData) {
   });
 }
 
+export async function appendLogLineAction(f: FormData) {
+  const id = await requireAccountId();
+  const jid = need(f, "jurnalId");
+  await run(`/j/${jid}`, async () => {
+    const files = f.getAll("photos").filter((x): x is File => x instanceof File && x.size > 0).slice(0, 10);
+    const photos: { key: string; contentType: string; bytes: number }[] = [];
+    for (const file of files) {
+      if (!PHOTO_TYPES.includes(file.type)) throw new UserError("Photos must be JPEG, PNG, WebP or GIF");
+      if (file.size > MAX_PHOTO_BYTES) throw new UserError("Photos can be up to 8 MB");
+      const key = randomUUID();
+      await storage.put(key, new Uint8Array(await file.arrayBuffer()));
+      photos.push({ key, contentType: file.type, bytes: file.size });
+    }
+    await j.appendLogLine(db(), id, need(f, "metricId"), {
+      text: str(f, "text") ?? "",
+      photos,
+      effectiveDate: str(f, "date") || undefined,
+    });
+  });
+}
+
+export async function removeLogLineAction(f: FormData) {
+  const id = await requireAccountId();
+  const jid = need(f, "jurnalId");
+  await run(`/j/${jid}`, () => j.removeLogLine(db(), id, need(f, "entryId"), need(f, "metricId"), need(f, "lineId")));
+}
+
 export async function updateEntryAction(f: FormData) {
   const id = await requireAccountId();
   const jid = need(f, "jurnalId");

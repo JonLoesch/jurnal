@@ -6,6 +6,7 @@ import { orNotFound } from "@/server/page";
 import { listMyRules } from "@/server/alerts";
 import { FIELD_TYPES } from "@/lib/fieldtypes";
 import { describeSchedule } from "@/lib/formvalues";
+import { withoutEmptyDefault } from "@/lib/types";
 import { Flash, button, card, input, linkButton } from "../../../_components";
 import {
   addMetricAction,
@@ -37,7 +38,8 @@ export default async function SettingsPage({ params, searchParams }: { params: P
   const db = getDb();
   const { jurnal, allSections, allMetrics } = await orNotFound(requireOwner(db, accountId, id));
   const rules = (await listMyRules(db, accountId)).filter((r) => r.rule.jurnalId === id && r.rule.kind === "self");
-  const multi = allSections.length > 1;
+  const shownSections = withoutEmptyDefault(allSections, allMetrics);
+  const multi = shownSections.length > 1;
 
   return (
     <div className="space-y-8">
@@ -58,7 +60,7 @@ export default async function SettingsPage({ params, searchParams }: { params: P
         </form>
       </section>
 
-      {allSections.map((s) => {
+      {shownSections.map((s) => {
         const metrics = allMetrics.filter((m) => m.sectionId === s.id);
         return (
           <section key={s.id} className={`${card} space-y-3 ${s.archivedAt ? "opacity-60" : ""}`}>
@@ -160,7 +162,7 @@ export default async function SettingsPage({ params, searchParams }: { params: P
         <form action={createSelfRuleAction} className="flex flex-wrap items-end gap-3 text-sm">
           <input type="hidden" name="jurnalId" value={id} />
           <label>For<br /><select name="sectionId" className={input}><option value="">Whole jurnal</option>
-            {allSections.filter((s) => !s.archivedAt).map((s) => <option key={s.id} value={s.id}>{s.isDefault ? "Entries" : s.name}</option>)}</select></label>
+            {shownSections.filter((s) => !s.archivedAt).map((s) => <option key={s.id} value={s.id}>{s.isDefault ? "Entries" : s.name}</option>)}</select></label>
           <label>If nothing is logged by<br /><input type="time" name="deadline" defaultValue="10:00" className={input} /></label>
           <button className={button}>Add reminder</button>
         </form>

@@ -229,7 +229,8 @@ export type FieldType =
   | "choice"
   | "timeofday"
   | "duration"
-  | "sets";
+  | "sets"
+  | "log"; // an append-only list of timestamped lines, for things written to through the day
 
 export type Schedule = {
   count: number;

@@ -3,10 +3,13 @@ import { getDb } from "@/db/client";
 import { getFeed, type FeedEntry } from "@/server/journal";
 import { alertLinkStatus } from "@/server/alerts";
 import type { Viewer } from "@/server/gate";
+import { PhotoInput } from "./photo-input";
+import { withoutEmptyDefault } from "@/lib/types";
 import { formatDate, Flash, MetricInput, ValueView, button, card, input, linkButton } from "./_components";
 import {
   addCommentAction,
   createAbsenceRuleAction,
+  appendLogLineAction,
   createDigestRuleAction,
   createEntryAction,
   deleteCommentAction,
@@ -30,7 +33,7 @@ export async function JurnalView({
   const { loaded, feed } = await orNotFound(getFeed(db, jurnalId, viewer));
   const { access, jurnal, allSections, allMetrics, subject } = loaded;
   const isOwner = access.role === "owner";
-  const sections = allSections.filter((s) => access.sectionIds.has(s.id) && !s.archivedAt);
+  const sections = withoutEmptyDefault(allSections, allMetrics).filter((s) => access.sectionIds.has(s.id) && !s.archivedAt);
   const sectionById = new Map(allSections.map((s) => [s.id, s]));
   const metricById = new Map(allMetrics.map((m) => [m.id, m]));
   const showSectionNames = allSections.filter((s) => !s.isDefault).length > 0;
@@ -73,6 +76,8 @@ export async function JurnalView({
         <section className="space-y-3">
           {sections.map((s) => {
             const sm = allMetrics.filter((m) => m.sectionId === s.id && !m.archivedAt);
+            const formMetrics = sm.filter((m) => m.fieldType !== "log");
+            const logMetrics = sm.filter((m) => m.fieldType === "log");
             return (
               <details key={s.id} className={card} open={sections.length === 1}>
                 <summary className="cursor-pointer font-medium">
@@ -84,10 +89,25 @@ export async function JurnalView({
                     No metrics yet. <Link className="underline" href={`/j/${jurnalId}/settings`}>Choose what to track.</Link>
                   </p>
                 ) : (
+                  <>
+                  {logMetrics.map((m) => (
+                    <form key={m.id} action={appendLogLineAction} className="mt-3 space-y-2 text-sm">
+                      <input type="hidden" name="jurnalId" value={jurnalId} />
+                      <input type="hidden" name="metricId" value={m.id} />
+                      <span className="block font-medium">{m.name}</span>
+                      <textarea name="text" rows={2} placeholder="Add a line (it is timestamped)" className={`${input} w-full`} />
+                      <PhotoInput name="photos" />
+                      <div className="flex flex-wrap items-center gap-3">
+                        <button className={button}>Add line</button>
+                        <label className="text-xs text-neutral-500">Day <input type="date" name="date" max={today} defaultValue={today} className={input} /></label>
+                      </div>
+                    </form>
+                  ))}
+                  {formMetrics.length > 0 && (
                   <form action={createEntryAction} className="mt-3 space-y-3">
                     <input type="hidden" name="jurnalId" value={jurnalId} />
                     <input type="hidden" name="sectionId" value={s.id} />
-                    {sm.map((m) => (
+                    {formMetrics.map((m) => (
                       <label key={m.id} className="block text-sm">
                         <span className="mb-1 block font-medium">{m.name}</span>
                         <MetricInput metric={m} />
@@ -100,6 +120,8 @@ export async function JurnalView({
                     </label>
                     <button className={button}>Save entry</button>
                   </form>
+                  )}
+                  </>
                 )}
               </details>
             );
@@ -149,7 +171,7 @@ export async function JurnalView({
                       return (
                         <div key={v.metricId} className="flex gap-2">
                           <dt className="w-32 shrink-0 text-neutral-500">{m.name}{m.archivedAt ? " (retired)" : ""}</dt>
-                          <dd className="min-w-0 flex-1"><ValueView metric={m} value={v.value} /></dd>
+                          <dd className="min-w-0 flex-1"><ValueView metric={m} value={v.value} tz={subject.timezone} removable={isOwner ? { jurnalId, entryId: e.id } : undefined} /></dd>
                         </div>
                       );
                     })}
@@ -160,7 +182,7 @@ export async function JurnalView({
                       <form action={updateEntryAction} className="mt-2 space-y-2">
                         <input type="hidden" name="jurnalId" value={jurnalId} />
                         <input type="hidden" name="entryId" value={e.id} />
-                        {allMetrics.filter((m) => m.sectionId === e.sectionId && (!m.archivedAt || e.values.some((v) => v.metricId === m.id))).map((m) => (
+                        {allMetrics.filter((m) => m.sectionId === e.sectionId && m.fieldType !== "log" && (!m.archivedAt || e.values.some((v) => v.metricId === m.id))).map((m) => (
                           <label key={m.id} className="block"><span className="mb-1 block font-medium">{m.name}</span>
                             <MetricInput metric={m} value={e.values.find((v) => v.metricId === m.id)?.value} /></label>
                         ))}

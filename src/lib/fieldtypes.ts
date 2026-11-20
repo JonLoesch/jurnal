@@ -12,11 +12,27 @@ export const FIELD_TYPES: { type: FieldType; label: string }[] = [
   { type: "timeofday", label: "Time of day" },
   { type: "duration", label: "Duration (minutes)" },
   { type: "sets", label: "Exercise sets (reps and weight)" },
+  { type: "log", label: "Running log (timestamped lines you add to)" },
 ];
 
 export type Checked = { ok: true; value: unknown; num: number | null } | { ok: false; error: string };
 
 const fail = (error: string): Checked => ({ ok: false, error });
+
+export type LogLine = { id: string; at: string; text: string; assetIds: string[] };
+
+const logSchema = z.object({
+  lines: z
+    .array(
+      z.object({
+        id: z.string().uuid(),
+        at: z.string().datetime(),
+        text: z.string().max(5000),
+        assetIds: z.array(z.string().uuid()).max(20).default([]),
+      }),
+    )
+    .max(500),
+});
 
 const setSchema = z.array(z.object({ reps: z.number().int().min(0).max(1000), weight: z.number().min(0).max(10000) })).max(50);
 
@@ -71,6 +87,11 @@ export function checkValue(type: FieldType, config: Record<string, unknown>, raw
     case "duration":
       if (typeof raw !== "number" || !Number.isFinite(raw) || raw < 0 || raw > 24 * 60) return fail("expected minutes");
       return { ok: true, value: raw, num: raw };
+    case "log": {
+      const parsed = logSchema.safeParse(raw);
+      if (!parsed.success) return fail("expected a log of lines");
+      return { ok: true, value: parsed.data, num: null };
+    }
     case "sets": {
       const parsed = setSchema.safeParse(raw);
       if (!parsed.success) return fail("expected a list of sets with reps and weight");

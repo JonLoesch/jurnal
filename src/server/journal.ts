@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, lte, notInArray, sql } from "drizzle-orm";
 import type { Db } from "@/db/client";
 import {
   accounts,
@@ -14,8 +14,8 @@ import {
   type Precision,
   type Schedule,
 } from "@/db/schema";
-import { viewEntries } from "@/lib/access";
-import { checkValue, validateConfig } from "@/lib/fieldtypes";
+import { viewEntries, viewValue } from "@/lib/access";
+import { checkValue, validateConfig, type LogLine } from "@/lib/fieldtypes";
 import { validateSchedule } from "@/lib/frequency";
 import { dateIn, isDate, isHHMM, isValidTimezone, timeIn } from "@/lib/time";
 import { UserError, forbidden, notFound } from "./errors";
@@ -268,14 +268,98 @@ export async function updateEntry(db: Db, accountId: string, entryId: string, in
         })
       : { date: entry.effectiveDate, time: entry.effectiveTime };
   const vals = await checkedValues(db, entry.sectionId, input.values);
-  if (vals.length === 0) throw new UserError("Fill in at least one field");
+  // Running logs are added to line by line, never replaced by an edit form, so an edit leaves them alone.
+  const logIds = (await db.select({ id: metrics.id }).from(metrics).where(and(eq(metrics.sectionId, entry.sectionId), eq(metrics.fieldType, "log"))))
+    .map((m) => m.id)
+    .filter((id) => !vals.some((v) => v.metricId === id));
+  if (vals.length === 0 && !(logIds.length && (await db.select({ id: entryValues.metricId }).from(entryValues).where(and(eq(entryValues.entryId, entryId), inArray(entryValues.metricId, logIds)))).length))
+    throw new UserError("Fill in at least one field");
   await db.transaction(async (tx) => {
     await tx
       .update(entries)
       .set({ effectiveDate: when.date, effectiveTime: when.time, updatedAt: now })
       .where(eq(entries.id, entryId));
-    await tx.delete(entryValues).where(eq(entryValues.entryId, entryId));
-    await tx.insert(entryValues).values(vals.map((v) => ({ entryId, metricId: v.metricId, value: v.value, valueNum: v.num })));
+    await tx.delete(entryValues).where(and(eq(entryValues.entryId, entryId), logIds.length ? notInArray(entryValues.metricId, logIds) : undefined));
+    if (vals.length) await tx.insert(entryValues).values(vals.map((v) => ({ entryId, metricId: v.metricId, value: v.value, valueNum: v.num })));
+  });
+}
+
+type LogValue = { lines: LogLine[] };
+
+/**
+ * Add a timestamped line to a running-log metric, on the day's entry for its section (created if there isn't
+ * one yet). Photos are already in storage; their rows are created here, inside the same transaction.
+ */
+export async function appendLogLine(
+  db: Db,
+  accountId: string,
+  metricId: string,
+  input: { text: string; photos?: { key: string; contentType: string; bytes: number }[]; effectiveDate?: string },
+  now = new Date(),
+) {
+  const [m] = await db
+    .select({ metric: metrics, section: sections })
+    .from(metrics)
+    .innerJoin(sections, eq(sections.id, metrics.sectionId))
+    .where(eq(metrics.id, metricId));
+  if (!m) throw notFound();
+  const { subject } = await requireOwner(db, accountId, m.section.jurnalId);
+  if (m.metric.fieldType !== "log") throw new UserError("That metric isn't a running log");
+  if (m.metric.archivedAt || m.section.archivedAt) throw new UserError("That metric is archived");
+  const text = input.text.trim();
+  const photos = input.photos ?? [];
+  if (!text && photos.length === 0) throw new UserError("Write something or add a photo");
+  if (text.length > 5000) throw new UserError("That line is too long");
+  const { date } = resolveWhen(subject.timezone, now, { effectiveDate: input.effectiveDate });
+
+  return db.transaction(async (tx) => {
+    // The day's entry in this section: the latest one, or a new one.
+    const [existing] = await tx
+      .select()
+      .from(entries)
+      .where(and(eq(entries.sectionId, m.section.id), eq(entries.effectiveDate, date)))
+      .orderBy(desc(entries.addedAt))
+      .limit(1);
+    const entry =
+      existing ??
+      (await tx.insert(entries).values({ sectionId: m.section.id, authorId: accountId, effectiveDate: date, addedAt: now, updatedAt: now }).returning())[0];
+
+    const assetIds: string[] = [];
+    for (const p of photos) {
+      const [a] = await tx
+        .insert(assets)
+        .values({ entryId: entry.id, metricId, storageKey: p.key, contentType: p.contentType, bytes: p.bytes })
+        .returning();
+      assetIds.push(a.id);
+    }
+    const [cur] = await tx
+      .select()
+      .from(entryValues)
+      .where(and(eq(entryValues.entryId, entry.id), eq(entryValues.metricId, metricId)));
+    const line: LogLine = { id: crypto.randomUUID(), at: now.toISOString(), text, assetIds };
+    const value: LogValue = { lines: [...((cur?.value as LogValue | undefined)?.lines ?? []), line] };
+    if (value.lines.length > 500) throw new UserError("This log is full for the day");
+    await tx
+      .insert(entryValues)
+      .values({ entryId: entry.id, metricId, value, valueNum: null })
+      .onConflictDoUpdate({ target: [entryValues.entryId, entryValues.metricId], set: { value } });
+    await tx.update(entries).set({ updatedAt: now }).where(eq(entries.id, entry.id));
+    return { entryId: entry.id, line };
+  });
+}
+
+/** Remove one line (a typo, a wrong photo). Its photos stay in storage but are no longer referenced. */
+export async function removeLogLine(db: Db, accountId: string, entryId: string, metricId: string, lineId: string, now = new Date()) {
+  await ownedEntry(db, accountId, entryId);
+  const [cur] = await db.select().from(entryValues).where(and(eq(entryValues.entryId, entryId), eq(entryValues.metricId, metricId)));
+  const lines = (cur?.value as LogValue | undefined)?.lines;
+  if (!lines || !lines.some((l) => l.id === lineId)) throw notFound();
+  const kept = lines.filter((l) => l.id !== lineId);
+  await db.transaction(async (tx) => {
+    const mine = and(eq(entryValues.entryId, entryId), eq(entryValues.metricId, metricId));
+    if (kept.length) await tx.update(entryValues).set({ value: { lines: kept } }).where(mine);
+    else await tx.delete(entryValues).where(mine);
+    await tx.update(entries).set({ updatedAt: now }).where(eq(entries.id, entryId));
   });
 }
 
@@ -327,9 +411,12 @@ export async function getFeed(db: Db, jurnalId: string, viewer: Viewer, opts: { 
           .orderBy(asc(comments.createdAt))
       : [];
 
+  const typeOf = new Map(loaded.allMetrics.map((m) => [m.id, m.fieldType]));
   const feed = shown.map<FeedEntry>((e) => ({
     ...e,
-    values: values.filter((v) => v.entryId === e.id && access.metricIds.has(v.metricId)).map((v) => ({ metricId: v.metricId, value: v.value })),
+    values: values
+      .filter((v) => v.entryId === e.id && access.metricIds.has(v.metricId))
+      .map((v) => ({ metricId: v.metricId, value: viewValue(access, typeOf.get(v.metricId) ?? "", v.value) })),
     comments: commentRows
       .filter((r) => r.c.entryId === e.id)
       .map((r) => ({ id: r.c.id, authorName: r.authorName, body: r.c.body, createdAt: r.c.createdAt })),

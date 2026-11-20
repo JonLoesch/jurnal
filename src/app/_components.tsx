@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { PhotoInput } from "./photo-input";
+import { removeLogLineAction } from "./actions";
 import type { Metric } from "@/lib/types";
 import { trendLine, type Point } from "@/lib/trend";
 import { daysBetween } from "@/lib/time";
@@ -101,7 +102,19 @@ export function MetricInput({ metric, value }: { metric: Metric; value?: unknown
   }
 }
 
-export function ValueView({ metric, value }: { metric: Metric; value: unknown }) {
+export function ValueView({
+  metric,
+  value,
+  tz,
+  removable,
+}: {
+  metric: Metric;
+  value: unknown;
+  /** The jurnal's timezone, for showing when each log line was written. */
+  tz?: string;
+  /** Owners can remove log lines; pass where the entry lives. */
+  removable?: { jurnalId: string; entryId: string };
+}) {
   const unit = (metric.config.unit as string | undefined) ?? "";
   switch (metric.fieldType) {
     case "yesno":
@@ -118,6 +131,38 @@ export function ValueView({ metric, value }: { metric: Metric; value: unknown })
           {(value as { reps: number; weight: number }[]).map((s) => `${s.reps}×${s.weight}${unit || "lb"}`).join(", ")}
         </>
       );
+    case "log": {
+      const lines = (value as { lines: { id: string; at?: string; text: string; assetIds?: string[] }[] }).lines;
+      return (
+        <ul className="space-y-1">
+          {lines.map((l) => (
+            <li key={l.id}>
+              {l.at && tz && (
+                <span className="mr-2 text-xs text-neutral-500">
+                  {new Date(l.at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: tz })}
+                </span>
+              )}
+              <span className="whitespace-pre-wrap">{l.text}</span>
+              <span className="ml-1 inline-flex flex-wrap gap-2 align-top">
+                {(l.assetIds ?? []).map((id) => (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img key={id} src={`/api/assets/${id}`} alt="" className="max-h-40 rounded" />
+                ))}
+              </span>
+              {removable && (
+                <form action={removeLogLineAction} className="ml-2 inline">
+                  <input type="hidden" name="jurnalId" value={removable.jurnalId} />
+                  <input type="hidden" name="entryId" value={removable.entryId} />
+                  <input type="hidden" name="metricId" value={metric.id} />
+                  <input type="hidden" name="lineId" value={l.id} />
+                  <button className="text-xs text-neutral-400 underline">remove</button>
+                </form>
+              )}
+            </li>
+          ))}
+        </ul>
+      );
+    }
     case "richtext": {
       const v = value as { text: string; assetIds?: string[] };
       return (
