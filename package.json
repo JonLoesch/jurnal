@@ -15,7 +15,7 @@
     "vercel-build": "tsx scripts/migrate.ts && next build"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "1.26.0",
+    "@modelcontextprotocol/sdk": "1.32.2",
     "@vercel/blob": "2.9.0",
     "drizzle-orm": "^0.45.4",
     "mcp-handler": "1.1.0",
