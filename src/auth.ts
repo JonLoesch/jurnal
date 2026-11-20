@@ -2,7 +2,7 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import { getDb } from "@/db/client";
-import { upsertAccount } from "@/server/journal";
+import { accountExists, upsertAccount } from "@/server/journal";
 
 // Local development only: a login form that needs no Google account. Never on in production.
 const devLogin = process.env.AUTH_DEV_LOGIN === "1" && process.env.NODE_ENV !== "production";
@@ -40,7 +40,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return token;
     },
     async session({ session, token }) {
-      if (token.accountId) (session.user as { id?: string }).id = token.accountId as string;
+      // A session left over from a deleted account (another device) counts as signed out.
+      const live = token.accountId ? await accountExists(getDb(), token.accountId as string) : false;
+      if (live) (session.user as { id?: string }).id = token.accountId as string;
       return session;
     },
   },

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { signIn, signOut } from "@/auth";
 import { getDb } from "@/db/client";
-import { entries, entryValues, metrics, sections, assets, type CommentPerm, type FieldType, type Precision } from "@/db/schema";
+import { accounts, entries, entryValues, metrics, sections, assets, type CommentPerm, type FieldType, type Precision } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { parseSchedule, parseValues } from "@/lib/formvalues";
 import { UserError } from "@/server/errors";
@@ -66,6 +66,16 @@ export async function updateAccountAction(f: FormData) {
       weekStart: Number(need(f, "weekStart")),
     });
   });
+}
+
+export async function deleteAccountAction(f: FormData) {
+  const id = await requireAccountId();
+  await run("/settings", async () => {
+    const [me] = await db().select().from(accounts).where(eq(accounts.id, id));
+    if (!me || str(f, "confirm")?.toLowerCase() !== me.email.toLowerCase()) throw new UserError("Type your email address to confirm");
+    await j.deleteAccount(db(), storage, id);
+  });
+  await signOut({ redirectTo: "/login" });
 }
 
 // ---------- jurnals ----------

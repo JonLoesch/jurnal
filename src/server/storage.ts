@@ -1,11 +1,12 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { get, put } from "@vercel/blob";
+import { del, get, put } from "@vercel/blob";
 
 /** Where uploaded photos live: Vercel Blob when its token is set, local disk otherwise (dev and tests). */
 export interface Storage {
   put(key: string, bytes: Uint8Array): Promise<void>;
   get(key: string): Promise<Uint8Array>;
+  delete(key: string): Promise<void>;
 }
 
 export class FsStorage implements Storage {
@@ -20,6 +21,9 @@ export class FsStorage implements Storage {
   }
   async get(key: string) {
     return readFile(this.file(key));
+  }
+  async delete(key: string) {
+    await rm(this.file(key), { force: true });
   }
 }
 
@@ -36,6 +40,9 @@ export class BlobStorage implements Storage {
     const res = await get(this.pathname(key), { access: "private" });
     if (!res || res.statusCode !== 200) throw new Error("photo not found in storage");
     return new Uint8Array(await new Response(res.stream).arrayBuffer());
+  }
+  async delete(key: string) {
+    await del(this.pathname(key));
   }
 }
 

@@ -4,7 +4,7 @@ import { accounts } from "@/db/schema";
 import { requireAccountId } from "@/server/session";
 import { listMyRules } from "@/server/alerts";
 import { Flash, button, card, input, linkButton } from "../_components";
-import { deleteRuleAction, updateAccountAction } from "../actions";
+import { deleteAccountAction, deleteRuleAction, updateAccountAction } from "../actions";
 import { PushToggle } from "./push-toggle";
 
 export default async function AccountSettings({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
@@ -44,6 +44,18 @@ export default async function AccountSettings({ searchParams }: { searchParams: 
           ))}
           {rules.length === 0 && <li className="text-neutral-500">None yet.</li>}
         </ul>
+      </section>
+      <section className={`${card} space-y-2 border-red-300`}>
+        <h2 className="font-semibold text-red-800">Delete my account</h2>
+        <p className="text-sm text-neutral-600">
+          This permanently deletes your account, every jurnal you own, all entries and photos, your reminders, and the
+          access you gave others. It can&apos;t be undone. Export anything you want to keep first, from each jurnal&apos;s
+          page.
+        </p>
+        <form action={deleteAccountAction} className="flex flex-wrap items-end gap-3 text-sm">
+          <label>Type <b>{me.email}</b> to confirm<br /><input name="confirm" autoComplete="off" className={`${input} w-72`} /></label>
+          <button className="rounded bg-red-700 px-3 py-1.5 text-sm text-white">Delete everything</button>
+        </form>
       </section>
     </div>
   );

@@ -152,3 +152,23 @@ test("photos: uploaded in notes, shown to the owner, hidden from strangers", asy
   const anon = await (await browser.newContext()).newPage();
   expect((await anon.request.get(src!)).status()).toBe(404);
 });
+
+test("account deletion: needs the email typed, then everything is gone", async ({ browser }) => {
+  const page = await newUser(browser, "Dave");
+  await page.getByPlaceholder("New jurnal").fill("Temporary");
+  await page.getByRole("button", { name: "Create" }).click();
+  await expect(page.getByRole("heading", { name: "Temporary" })).toBeVisible();
+
+  await page.goto("/settings");
+  await page.locator('input[name="confirm"]').fill("not-my-email");
+  await page.getByRole("button", { name: "Delete everything" }).click();
+  await expect(page.getByText("Type your email address to confirm")).toBeVisible();
+
+  await page.locator('input[name="confirm"]').fill("dave@example.com");
+  await page.getByRole("button", { name: "Delete everything" }).click();
+  await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
+
+  // Signing in again makes a brand-new, empty account.
+  await signIn(page, "Dave");
+  await expect(page.getByText("No jurnals yet")).toBeVisible();
+});

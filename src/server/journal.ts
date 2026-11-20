@@ -34,6 +34,11 @@ export async function upsertAccount(db: Db, input: { email: string; name: string
   });
 }
 
+export async function accountExists(db: Db, id: string) {
+  const [row] = await db.select({ id: accounts.id }).from(accounts).where(eq(accounts.id, id));
+  return !!row;
+}
+
 export async function updateAccountSettings(
   db: Db,
   accountId: string,
@@ -368,6 +373,28 @@ export function toCsv(rows: { date: string; time: string; section: string; metri
     [r.date, r.time, r.section, r.metric, typeof r.value === "string" ? r.value : JSON.stringify(r.value)].map(esc).join(","),
   );
   return ["date,time,section,metric,value", ...lines].join("\n") + "\n";
+}
+
+/**
+ * Delete an account and everything it owns. The database rows go first, in one transaction; the photo files
+ * follow, best effort, so a storage hiccup can't leave a half-deleted account behind.
+ */
+export async function deleteAccount(db: Db, files: { delete(key: string): Promise<void> }, accountId: string) {
+  const keys = await db.transaction(async (tx) => {
+    const found = await tx
+      .select({ key: assets.storageKey })
+      .from(assets)
+      .innerJoin(entries, eq(entries.id, assets.entryId))
+      .innerJoin(sections, eq(sections.id, entries.sectionId))
+      .innerJoin(jurnals, eq(jurnals.id, sections.jurnalId))
+      .innerJoin(owners, eq(owners.id, jurnals.ownerId))
+      .where(sql`${owners.accountId} = ${accountId} or ${entries.authorId} = ${accountId}`);
+    // Entries written into other people's jurnals have no cascade from the account; remove them first.
+    await tx.delete(entries).where(eq(entries.authorId, accountId));
+    await tx.delete(accounts).where(eq(accounts.id, accountId));
+    return found.map((r) => r.key);
+  });
+  await Promise.allSettled(keys.map((k) => files.delete(k)));
 }
 
 export async function photoAccess(db: Db, assetId: string, viewer: Viewer) {
