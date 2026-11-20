@@ -162,18 +162,23 @@ self reminders come before sharing.
   Actions.
 - **Note:** commits made by agents stay local; he pushes, and CI runs from his pushes.
 
-## 9. Build status (2026-11-19)
+## 9. Build status (2026-11-20)
 
-Built on branch `build/v2-core`, tested locally only (93 unit/integration tests, 3 browser tests).
+**v2.0 is deployed** at https://jurnal-jlo.vercel.app (Vercel + Neon + Vercel Blob, Google sign-in, per-5-minute
+trigger from cron-job.org). Checked in production: sign-in, journaling, a self reminder delivered as a real
+push to an installed Android PWA, photo upload (private blob, served only through the access check).
+Tested locally and in CI: 101 unit/integration tests and 4 browser tests.
 
 | Milestone | State |
 |---|---|
-| M0 foundations | Done except the hosted pieces: Next.js 16, Drizzle migrations, Auth.js (Google plus a local-only dev login), GitHub Actions CI, Dependabot, AGPL license. Vercel, Neon and Google OAuth are not set up. |
-| M1 solo journaling | Done: jurnals, hidden default section, sections, all field types, backfill, feed, archive, photos (local disk). Notes are plain text plus photos: no rich-text editor yet. |
-| M2 trends and export | Done: per-metric chart with trend line, CSV and JSON export. |
-| M3 self reminders | Done in code: rules, scheduler endpoint, Web Push sender, snooze, dismiss, overdue banner, `?from=alert` toast. Not tested on a phone, and no real push has been sent. |
-| M4 sharing | Done: invites (7-day, single-use default), grants, protected sections and metrics, precision per grant, public link, comments, warnings. |
-| M5 follower alerts | Done: permission flag, follower rules, owner transparency list. |
+| M0 foundations | Done: Next.js 16, Drizzle migrations, Auth.js (Google), CI on GitHub, Dependabot, AGPL, Vercel build settings in `vercel.json` and `package.json` |
+| M1 solo journaling | Done: jurnals, sections, all field types, backfill, feed, archive, photos in Vercel Blob, account deletion. Notes are plain text plus photos (no rich-text editor) |
+| M2 trends and export | Done |
+| M3 self reminders | Done and verified with a real phone push |
+| M4 sharing | Built and tested locally; not yet tried with a second real account |
+| M5 follower alerts | Built and tested locally; not yet tried with a second real account |
 
-Not done yet: hosting and secrets, the per-minute scheduler trigger, object storage for photos, a
-rich-text editor, the printable workout sheet and the other v2.1 items.
+Moved to v2.1: trying sharing and follower alerts with a second real user (check the Google consent
+screen's publishing status first), folding the reminder deadline into the section schedule form, a
+"download everything" export, the rich-text editor, macros, the printable workout sheet, the adherence
+calendar, extra notification channels.

@@ -23,3 +23,5 @@ destination.
 `build/v2-core` (Next.js 16, Drizzle, local Postgres on port 54329 via `scripts/db-start.sh`, Playwright with
 system Chrome). Hosted pieces (Vercel, Neon, Google OAuth, Cloudflare cron, real push on a phone) are not
 set up; Jonathan does those later.
+
+- **Build state (2026-11-20):** v2.0 is deployed to https://jurnal-jlo.vercel.app and verified on his Android phone (push reminder, photo upload to private Vercel Blob). Sharing and follower alerts are built and tested locally only. Second-user testing and the reminder UX rework are v2.1. Branches: `main` (deploys) and `development` (work) only.
