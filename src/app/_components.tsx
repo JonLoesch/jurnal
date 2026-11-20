@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { PhotoInput } from "./photo-input";
 import type { Metric } from "@/lib/types";
 import { trendLine, type Point } from "@/lib/trend";
 import { daysBetween } from "@/lib/time";
@@ -37,7 +38,7 @@ export function MetricInput({ metric, value }: { metric: Metric; value?: unknown
       return (
         <div className="space-y-1">
           <textarea name={name} defaultValue={v?.text ?? ""} rows={3} className={`${input} w-full`} />
-          <input type="file" name={`${name}_photos`} accept="image/*" multiple className="text-xs" />
+          <PhotoInput name={`${name}_photos`} />
         </div>
       );
     }
