@@ -5,13 +5,20 @@ import type { FieldType, Schedule, TokenScope } from "@/db/schema";
 import { FIELD_TYPES } from "@/lib/fieldtypes";
 import { timeIn } from "@/lib/time";
 import { UserError } from "./errors";
+import { storage } from "./storage";
 import { loadForViewer } from "./gate";
 import * as j from "./journal";
 import { grants, jurnals } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 type Extra = { authInfo?: { scopes: string[]; extra?: Record<string, unknown> } };
-type Result = { content: { type: "text"; text: string }[]; isError?: boolean };
+type Content = { type: "text"; text: string } | { type: "image"; data: string; mimeType: string };
+type Result = { content: Content[]; isError?: boolean };
+
+/** A tool that answers with something other than JSON text (an image). */
+class Raw {
+  constructor(public content: Content[]) {}
+}
 
 const ok = (data: unknown): Result => ({ content: [{ type: "text", text: JSON.stringify(data, null, 2) }] });
 const fail = (message: string): Result => ({ content: [{ type: "text", text: message }], isError: true });
@@ -25,7 +32,8 @@ async function run<A>(scope: TokenScope, extra: Extra, args: A, fn: (accountId: 
   if (typeof accountId !== "string") return fail("Not signed in");
   if (!extra.authInfo?.scopes.includes(scope)) return fail(`This token doesn't have the "${scope}" permission`);
   try {
-    return ok(await fn(accountId, args));
+    const out = await fn(accountId, args);
+    return out instanceof Raw ? { content: out.content } : ok(out);
   } catch (e) {
     if (e instanceof UserError) return fail(e.message);
     console.error("mcp tool failed", e);
@@ -100,7 +108,7 @@ export function registerTools(server: McpServer) {
     "get_entries",
     {
       description:
-        "Entries in a jurnal, newest first, with each metric's value by name. Running logs list their lines with the time each was written. Dates are calendar dates in the owner's timezone.",
+        "Entries in a jurnal, newest first, with each metric's value by name. Running logs list their lines with the time each was written. Photos appear as photoIds: fetch one with get_photo. Dates are calendar dates in the owner's timezone.",
       inputSchema: { jurnalId, from: date.optional(), to: date.optional(), limit: z.number().int().min(1).max(500).optional() },
     },
     tool<{ jurnalId: string; from?: string; to?: string; limit?: number }>("read", async (accountId, a) => {
@@ -121,11 +129,11 @@ export function registerTools(server: McpServer) {
               const m = metricById.get(v.metricId);
               if (m?.fieldType === "log") {
                 const lines = (v.value as { lines: { at?: string; text: string; assetIds?: string[] }[] }).lines;
-                return [m.name, lines.map((l) => ({ time: l.at ? timeIn(tz, new Date(l.at)) : undefined, text: l.text, photos: l.assetIds?.length ?? 0 }))];
+                return [m.name, lines.map((l) => ({ time: l.at ? timeIn(tz, new Date(l.at)) : undefined, text: l.text, photoIds: l.assetIds ?? [] }))];
               }
               if (m?.fieldType === "richtext") {
                 const r = v.value as { text: string; assetIds?: string[] };
-                return [m.name, { text: r.text, photos: r.assetIds?.length ?? 0 }];
+                return [m.name, { text: r.text, photoIds: r.assetIds ?? [] }];
               }
               return [m?.name ?? v.metricId, v.value];
             }),
@@ -141,6 +149,20 @@ export function registerTools(server: McpServer) {
     tool<{ jurnalId: string; metricId: string }>("read", async (accountId, a) => {
       const { metric, points } = await j.getMetricSeries(getDb(), a.jurnalId, a.metricId, { accountId });
       return { metric: metric.name, type: metric.fieldType, points };
+    }),
+  );
+
+  server.registerTool(
+    "get_photo",
+    {
+      description: "A photo attached to an entry, as an image. Use a photoId from get_entries. Only photos you may see are returned.",
+      inputSchema: { photoId: z.string().uuid() },
+    },
+    tool<{ photoId: string }>("read", async (accountId, a) => {
+      const asset = await j.photoAccess(getDb(), a.photoId, { accountId });
+      if (asset.bytes > 8 * 1024 * 1024) throw new UserError("That photo is too large to send");
+      const bytes = await storage.get(asset.storageKey);
+      return new Raw([{ type: "image", data: Buffer.from(bytes).toString("base64"), mimeType: asset.contentType }]);
     }),
   );
 

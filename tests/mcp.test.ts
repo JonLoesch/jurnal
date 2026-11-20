@@ -1,6 +1,8 @@
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { Db } from "@/db/client";
-import { addMetric, createJurnal, getFeed } from "@/server/journal";
+import { addMetric, appendLogLine, createJurnal, getFeed } from "@/server/journal";
+import { storage } from "@/server/storage";
+import { sql } from "drizzle-orm";
 import { createInvite, redeemInvite } from "@/server/sharing";
 import { createToken } from "@/server/tokens";
 import { makeAccount, testDb } from "./helpers";
@@ -126,6 +128,44 @@ describe("MCP endpoint", () => {
   });
 });
 
-import { sql } from "drizzle-orm";
 const sqlProtect = (metricId: string) => sql`update metric set protected = true where id = ${metricId}`;
 const seenSection = (structure: string) => (JSON.parse(structure) as { sections: { id: string }[] }).sections[0].id;
+
+describe("MCP photos", () => {
+  async function withPhoto() {
+    const { ann, jurnal, diet } = await world();
+    const { token } = await createToken(db, ann.id, { name: "r", scopes: [] });
+    const key = crypto.randomUUID();
+    const bytes = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 1, 2, 3]); // not a real PNG; the bytes just have to round-trip
+    await storage.put(key, bytes);
+    const { entryId, line } = await appendLogLine(db, ann.id, diet.id, { text: "lunch", photos: [{ key, contentType: "image/png", bytes: bytes.length }] });
+    return { ann, jurnal, token, bytes, entryId, photoId: line.assetIds[0], diet };
+  }
+
+  it("lists a photo's id in the entries and returns the image itself", async () => {
+    const { jurnal, token, bytes, photoId } = await withPhoto();
+    const entries = (await call(token, "get_entries", { jurnalId: jurnal.id })).data as { values: Record<string, { photoIds: string[] }[]> }[];
+    expect(entries[0].values.Diet[0].photoIds).toEqual([photoId]);
+
+    const { body } = await rpc(token, "tools/call", { name: "get_photo", arguments: { photoId } });
+    const image = body.result.content[0];
+    expect(image.type).toBe("image");
+    expect(image.mimeType).toBe("image/png");
+    expect(Array.from(Buffer.from(image.data, "base64"))).toEqual(Array.from(bytes));
+  });
+
+  it("won't hand a photo to someone who can't see its metric, or to a stranger", async () => {
+    const { ann, jurnal, diet, photoId } = await withPhoto();
+    const bob = await makeAccount(db, "Bob");
+    await redeemInvite(db, bob.id, await createInvite(db, ann.id, jurnal.id));
+    const b = await createToken(db, bob.id, { name: "b", scopes: [] });
+    expect((await rpc(b.token, "tools/call", { name: "get_photo", arguments: { photoId } })).body.result.content[0].type).toBe("image"); // followers see unprotected photos
+
+    await db.execute(sql`update metric set protected = true where id = ${diet.id}`);
+    const hidden = await rpc(b.token, "tools/call", { name: "get_photo", arguments: { photoId } });
+    expect(hidden.body.result.isError).toBe(true);
+    const carol = await makeAccount(db, "Carol");
+    const c = await createToken(db, carol.id, { name: "c", scopes: [] });
+    expect((await rpc(c.token, "tools/call", { name: "get_photo", arguments: { photoId } })).body.result.isError).toBe(true);
+  });
+});
