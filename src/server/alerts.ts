@@ -65,6 +65,39 @@ export async function createAbsenceRule(
   return r;
 }
 
+/**
+ * A follower asks for a daily summary of new entries. Any grantee may: it only reports what they can already
+ * read, and day-level, so it needs no "may set alerts" permission. The owner has no use for one.
+ */
+export async function createDigestRule(
+  db: Db,
+  accountId: string,
+  input: { jurnalId: string; sectionId?: string | null; notifyAt?: string },
+) {
+  const { access } = await loadForViewer(db, input.jurnalId, { accountId });
+  if (access.role !== "grantee") throw new UserError("Only people this jurnal is shared with can ask for updates", 403);
+  const sectionId = input.sectionId || null;
+  if (sectionId && !access.sectionIds.has(sectionId)) throw notFound();
+  const notifyAt = input.notifyAt ?? "10:00";
+  if (!isHHMM(notifyAt)) throw new UserError("Delivery time should look like 10:00");
+  const mine = await db
+    .select({ sectionId: reminderRules.sectionId })
+    .from(reminderRules)
+    .where(and(eq(reminderRules.jurnalId, input.jurnalId), eq(reminderRules.ownerAccountId, accountId), eq(reminderRules.kind, "follower_digest")));
+  if (mine.some((r) => r.sectionId === sectionId)) throw new UserError("You already get updates for this");
+  const [r] = await db
+    .insert(reminderRules)
+    .values({
+      ownerAccountId: accountId,
+      jurnalId: input.jurnalId,
+      sectionId,
+      kind: "follower_digest",
+      config: { type: "digest", notifyAt },
+    })
+    .returning();
+  return r;
+}
+
 export async function deleteRule(db: Db, accountId: string, ruleId: string) {
   const deleted = await db
     .delete(reminderRules)
@@ -81,14 +114,14 @@ export async function listMyRules(db: Db, accountId: string) {
     .where(eq(reminderRules.ownerAccountId, accountId));
 }
 
-/** Transparency: who has set absence alerts on a jurnal I own. */
+/** Transparency: who has set absence alerts or update digests on a jurnal I own. */
 export async function listAlertsOnMyJurnal(db: Db, accountId: string, jurnalId: string) {
   await requireOwner(db, accountId, jurnalId);
   return db
     .select({ rule: reminderRules, followerName: accounts.name })
     .from(reminderRules)
     .innerJoin(accounts, eq(accounts.id, reminderRules.ownerAccountId))
-    .where(and(eq(reminderRules.jurnalId, jurnalId), eq(reminderRules.kind, "follower_absence")));
+    .where(and(eq(reminderRules.jurnalId, jurnalId), inArray(reminderRules.kind, ["follower_absence", "follower_digest"])));
 }
 
 // ---------- evaluation ----------
@@ -103,12 +136,16 @@ async function inputFor(db: Db, rule: Rule, now: Date): Promise<(RuleInput & { j
   }
   const { access, subject, jurnal } = loaded;
   if (rule.kind === "follower_absence" && !(access.role === "grantee" && access.canAlert)) return null;
+  if (rule.kind === "follower_digest" && access.role !== "grantee") return null;
   if (rule.kind === "self" && access.role !== "owner") return null;
   if (jurnal.archivedAt) return null;
 
   const scopeSectionIds = rule.sectionId ? (access.sectionIds.has(rule.sectionId) ? [rule.sectionId] : []) : [...access.sectionIds];
   const rows = scopeSectionIds.length
-    ? await db.select({ date: entries.effectiveDate }).from(entries).where(inArray(entries.sectionId, scopeSectionIds))
+    ? await db
+        .select({ date: entries.effectiveDate, addedAt: entries.addedAt })
+        .from(entries)
+        .where(inArray(entries.sectionId, scopeSectionIds))
     : [];
   const section = rule.sectionId ? loaded.allSections.find((s) => s.id === rule.sectionId) : undefined;
   if (rule.sectionId && (!section || section.archivedAt)) return null;
@@ -124,6 +161,8 @@ async function inputFor(db: Db, rule: Rule, now: Date): Promise<(RuleInput & { j
     subjectWeekStart: subject.weekStart,
     recipientTz: recipient.timezone,
     entryDates: rows.map((r) => r.date),
+    // A new digest reports only what is added after it was asked for, never the existing backlog.
+    addedDates: rows.filter((r) => r.addedAt >= rule.createdAt).map((r) => dateIn(subject.timezone, r.addedAt)),
     baselineDate: dateIn(subject.timezone, jurnal.createdAt),
     label: section && !section.isDefault ? `${jurnal.name} / ${section.name}` : jurnal.name,
   };
@@ -153,10 +192,11 @@ export async function runTick(db: Db, notifier: Notifier, now = new Date()): Pro
       .returning();
     if (inserted.length === 0) continue; // already fired for this streak or slot
     fired++;
+    // A digest is news, not a nag: it opens the jurnal plainly and never becomes an overdue banner.
     await notifier.send(rule.ownerAccountId, {
       title: input.jurnalName,
       body: result.message,
-      url: `/j/${rule.jurnalId}?from=alert&firing=${inserted[0].id}`,
+      url: rule.kind === "follower_digest" ? `/j/${rule.jurnalId}` : `/j/${rule.jurnalId}?from=alert&firing=${inserted[0].id}`,
     });
   }
 
@@ -167,6 +207,7 @@ export async function runTick(db: Db, notifier: Notifier, now = new Date()): Pro
     .innerJoin(reminderRules, eq(reminderRules.id, alertFirings.ruleId))
     .where(and(lte(alertFirings.snoozedUntil, now), isNull(alertFirings.dismissedAt)));
   for (const { firing, rule } of snoozed) {
+    if (rule.kind === "follower_digest") continue;
     await db.update(alertFirings).set({ snoozedUntil: null }).where(eq(alertFirings.id, firing.id));
     const input = await inputFor(db, rule, now);
     if (!input) continue;
@@ -201,6 +242,7 @@ export async function getOverdue(db: Db, accountId: string, now = new Date()): P
     );
   const banners: OverdueBanner[] = [];
   for (const { firing, rule } of rows) {
+    if (rule.kind === "follower_digest") continue;
     const input = await inputFor(db, rule, now);
     if (!input) continue;
     const result = evaluateRule({ ...input, now });

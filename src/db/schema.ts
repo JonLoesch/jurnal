@@ -184,7 +184,7 @@ export const reminderRules = pgTable("reminder_rule", {
     .notNull()
     .references(() => jurnals.id, { onDelete: "cascade" }),
   sectionId: uuid("section_id").references(() => sections.id, { onDelete: "cascade" }),
-  kind: text("kind").$type<"self" | "follower_absence">().notNull(),
+  kind: text("kind").$type<"self" | "follower_absence" | "follower_digest">().notNull(),
   config: jsonb("config").$type<RuleConfig>().notNull(),
   active: boolean("active").notNull().default(true),
   createdAt: createdAt(),
@@ -240,4 +240,5 @@ export type Schedule = {
 
 export type RuleConfig =
   | { type: "deadline"; deadline: string } // self: log by HH:MM in the subject's timezone
-  | { type: "absence"; days: number; notifyAt: string }; // follower: N complete silent days
+  | { type: "absence"; days: number; notifyAt: string } // follower: N complete silent days
+  | { type: "digest"; notifyAt: string }; // follower: a daily summary of entries added yesterday

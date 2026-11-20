@@ -1,9 +1,9 @@
 import type { RuleConfig, Schedule } from "@/db/schema";
 import { SHORTCUTS, expectedOn, slotsDue, weekRange, weeklyMustLogToday } from "./frequency";
-import { dateIn, daysBetween, minutesOf, pastTimeToday, timeIn } from "./time";
+import { addDays, dateIn, daysBetween, minutesOf, pastTimeToday, timeIn } from "./time";
 
 export type RuleInput = {
-  kind: "self" | "follower_absence";
+  kind: "self" | "follower_absence" | "follower_digest";
   config: RuleConfig;
   /** The watched section's schedule (self rules); null means one entry a day. */
   schedule: Schedule | null;
@@ -15,6 +15,8 @@ export type RuleInput = {
   recipientTz: string;
   /** Effective dates of the entries the rule's owner is allowed to see, in the watched scope. */
   entryDates: string[];
+  /** Digest rules: the dates, in the subject's timezone, on which entries the owner may see were added. */
+  addedDates: string[];
   /** When watching began (the jurnal's creation date in the subject's timezone). */
   baselineDate: string;
   label: string;
@@ -44,6 +46,21 @@ export function evaluateRule(i: RuleInput): RuleResult {
       due: true,
       dedupeKey: `absence:${last}`,
       message: `${i.label}: nothing logged for ${silentDays} days (last entry ${maxDate(i.entryDates) ? last : "none yet"})`,
+      lastEffectiveDate: maxDate(i.entryDates),
+    };
+  }
+
+  if (i.config.type === "digest") {
+    if (i.kind !== "follower_digest") return { due: false };
+    // Yesterday's additions, counted by the day they were added so backfilled entries are included. Only the day
+    // is used, never the time, so this never says more than a day-precision grant allows.
+    const yesterday = addDays(today, -1);
+    const n = i.addedDates.filter((d) => d === yesterday).length;
+    if (n === 0 || !pastTimeToday(i.recipientTz, i.now, i.config.notifyAt)) return { due: false };
+    return {
+      due: true,
+      dedupeKey: `digest:${yesterday}`,
+      message: `${i.label}: ${n} new ${n === 1 ? "entry" : "entries"} yesterday`,
       lastEffectiveDate: maxDate(i.entryDates),
     };
   }

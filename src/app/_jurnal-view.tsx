@@ -7,6 +7,7 @@ import { formatDate, Flash, MetricInput, ValueView, button, card, input, linkBut
 import {
   addCommentAction,
   createAbsenceRuleAction,
+  createDigestRuleAction,
   createEntryAction,
   deleteCommentAction,
   deleteEntryAction,
@@ -104,6 +105,18 @@ export async function JurnalView({
             );
           })}
         </section>
+      )}
+
+      {access.role === "grantee" && (
+        <details className={card}>
+          <summary className="cursor-pointer text-sm font-medium">Tell me about new entries</summary>
+          <form action={createDigestRuleAction} className="mt-3 flex flex-wrap items-end gap-3 text-sm">
+            <input type="hidden" name="jurnalId" value={jurnalId} />
+            <label>Send me a daily summary at<br /><input type="time" name="notifyAt" defaultValue="10:00" className={input} /></label>
+            <button className={button}>Turn on</button>
+          </form>
+          <p className="mt-2 text-xs text-neutral-500">Once a day, only if something new was added yesterday. It says how many, not what, and only counts what you can see here.</p>
+        </details>
       )}
 
       {access.canAlert && (

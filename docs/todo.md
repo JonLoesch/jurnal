@@ -11,6 +11,9 @@ Sources: the v2 plan (`docs/plan.md`), what we hit while deploying, and the diet
 (`~/notes/areas/fitness/jurnal.md`, raw messages from 2026-11-19 to 2026-11-20 10:41, plus the coach's sheet
 conventions in that folder's `CLAUDE.md`). The fitness data is what the app has to hold, so it drives the order.
 
+**Already built since v2.0:** account deletion, Blob photo storage, and new-entry digests for followers (see
+"2.2" below; the code is done, only a real second user is missing).
+
 ## Release split
 
 | Release | Purpose | Done when |
@@ -90,6 +93,11 @@ AI only
 - [ ] **Printable workout sheet** (his handwritten page, laser printer): a print view of that section, filled in as
       a normal entry afterward.
 - [ ] **Activities**: start, end, intensity (matches the coach sheet's activity log); standing-desk hours as a normal metric.
+- [ ] **Metric description**: optional text shown under the metric's name as the question when logging ("Did you
+      refrain from eating when you weren't hungry?"). A new field on the metric; from the v1 review.
+- [ ] **Anchored scale labels**: optional text on scale points (v1 had "0 Not at all / 3 I at least got outdoors /
+      10 Enough to feel good and tired"), so ratings stay consistent over months. Fits `metric.config`, no schema change.
+      From the v1 review.
 - [ ] **Quick capture**: one text box on the home screen, "log something now", saved as a plain note on the right
       jurnal with the time, to be sorted later. This is the cheapest answer to "I forget to write it down".
 - [ ] **Rich-text notes**: a Tiptap editor (plain text plus photos today). Photos inline.
@@ -113,6 +121,8 @@ Mixed
       (Day tabs, meal blocks, activity log, optional calorie column). The service account and the cell map already
       exist in `~/notes/areas/fitness/`. AI builds it; he confirms the mapping and the coach is fine with it.
 - [ ] **Coach view polish**: what Briana sees on a phone, how comments read, what an alert says. Needs his feedback after she tries it.
+- [ ] **Try the new-entry digest with a real follower** (built and tested locally): a follower turns on "Tell me about
+      new entries" and gets one push a day, at their hour, only if something was added the day before.
 - [ ] **Abuse basics before wider invites**: block or report on comments and public links.
 
 AI only

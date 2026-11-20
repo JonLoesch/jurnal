@@ -355,6 +355,14 @@ export async function createAbsenceRuleAction(f: FormData) {
   });
 }
 
+export async function createDigestRuleAction(f: FormData) {
+  const id = await requireAccountId();
+  const jid = need(f, "jurnalId");
+  await run(`/j/${jid}`, async () => {
+    await al.createDigestRule(db(), id, { jurnalId: jid, notifyAt: str(f, "notifyAt") || undefined });
+  });
+}
+
 export async function deleteRuleAction(f: FormData) {
   const id = await requireAccountId();
   await run(str(f, "back") || "/settings", () => al.deleteRule(db(), id, need(f, "ruleId")));

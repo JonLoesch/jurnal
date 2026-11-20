@@ -38,7 +38,7 @@ export default async function AccountSettings({ searchParams }: { searchParams: 
         <ul className="space-y-1 text-sm">
           {rules.map(({ rule, jurnalName }) => (
             <li key={rule.id} className="flex gap-3">
-              <span>{jurnalName}: {rule.kind === "self" ? `log by ${(rule.config as { deadline: string }).deadline}` : `tell me after ${(rule.config as { days: number }).days} quiet days`}</span>
+              <span>{jurnalName}: {ruleSummary(rule)}</span>
               <form action={deleteRuleAction}><input type="hidden" name="ruleId" value={rule.id} /><button className={linkButton}>Remove</button></form>
             </li>
           ))}
@@ -59,4 +59,11 @@ export default async function AccountSettings({ searchParams }: { searchParams: 
       </section>
     </div>
   );
+}
+
+function ruleSummary(rule: { kind: string; config: unknown }) {
+  const c = rule.config as { deadline?: string; days?: number; notifyAt?: string };
+  if (rule.kind === "self") return `log by ${c.deadline}`;
+  if (rule.kind === "follower_digest") return `daily summary of new entries at ${c.notifyAt}`;
+  return `tell me after ${c.days} quiet days`;
 }

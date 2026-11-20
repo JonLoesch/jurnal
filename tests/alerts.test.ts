@@ -6,6 +6,7 @@ import { createInvite, redeemInvite, listGrants, updateGrantOptions, revokeGrant
 import {
   alertLinkStatus,
   createAbsenceRule,
+  createDigestRule,
   createSelfRule,
   deleteRule,
   dismissFiring,
@@ -209,5 +210,91 @@ describe("follower absence alerts", () => {
     await createEntry(db, ann.id, section.id, { values: { [note.id]: "back" } }, new Date("2026-11-19T20:00:00Z"));
     expect((await alertLinkStatus(db, bob.id, f.id)).newerEntryExists).toBe(true);
     await expect(alertLinkStatus(db, ann.id, f.id)).rejects.toThrow(/Not found/);
+  });
+});
+
+describe("follower digests", () => {
+  async function follow() {
+    const s = await setup();
+    await redeemInvite(db, s.bob.id, await createInvite(db, s.ann.id, s.jurnal.id)); // no alert permission needed
+    return s;
+  }
+  // The rule is created "now"; back-date it so test timestamps from November count as after it.
+  const backdate = () => db.execute(sql`update reminder_rule set created_at = ${created.toISOString()}`);
+  const added = (ann: { id: string }, sectionId: string, noteId: string, date: string, addedAt: string) =>
+    createEntry(db, ann.id, sectionId, { effectiveDate: date, values: { [noteId]: "x" } }, new Date(addedAt));
+
+  it("lets any follower ask, but not the owner or a stranger, and not twice", async () => {
+    const { ann, bob, jurnal } = await follow();
+    await createDigestRule(db, bob.id, { jurnalId: jurnal.id });
+    await expect(createDigestRule(db, bob.id, { jurnalId: jurnal.id })).rejects.toThrow(/already/);
+    await expect(createDigestRule(db, ann.id, { jurnalId: jurnal.id })).rejects.toThrow(/shared with/);
+    const carol = await makeAccount(db, "Carol");
+    await expect(createDigestRule(db, carol.id, { jurnalId: jurnal.id })).rejects.toThrow(/Not found|shared with/);
+  });
+
+  it("fires once at the follower's hour for yesterday's additions, counting backfills", async () => {
+    const { ann, bob, jurnal, section, note } = await follow();
+    await createDigestRule(db, bob.id, { jurnalId: jurnal.id }); // 10:00 Los Angeles
+    await backdate();
+    // Two entries added on Nov 18 (NY): one for that day, one backfilled for Nov 12.
+    await added(ann, section.id, note.id, "2026-11-18", "2026-11-18T15:00:00Z");
+    await added(ann, section.id, note.id, "2026-11-12", "2026-11-18T16:00:00Z");
+    const n = new RecordingNotifier();
+
+    expect((await runTick(db, n, new Date("2026-11-19T15:00:00Z"))).fired).toBe(0); // 07:00 LA, too early
+    expect((await runTick(db, n, new Date("2026-11-19T18:05:00Z"))).fired).toBe(1);
+    expect(n.sent.map((s) => s.accountId)).toEqual([bob.id]);
+    expect(n.sent[0].payload.body).toBe("Fitness: 2 new entries yesterday");
+    expect(n.sent[0].payload.url).toBe(`/j/${jurnal.id}`); // plain link, no ?from=alert
+    expect((await runTick(db, n, new Date("2026-11-19T19:05:00Z"))).fired).toBe(0); // once per day
+    expect((await runTick(db, n, new Date("2026-11-20T18:05:00Z"))).fired).toBe(0); // nothing new Nov 19
+  });
+
+  it("stays quiet on days nothing was added, and ignores entries from before it was set up", async () => {
+    const { ann, bob, jurnal, section, note } = await follow();
+    await added(ann, section.id, note.id, "2026-11-17", "2026-11-17T15:00:00Z"); // before the rule exists
+    await createDigestRule(db, bob.id, { jurnalId: jurnal.id });
+    await db.execute(sql`update reminder_rule set created_at = ${"2026-11-18T12:00:00Z"}`);
+    const n = new RecordingNotifier();
+    expect((await runTick(db, n, new Date("2026-11-18T18:05:00Z"))).fired).toBe(0); // would count Nov 17
+    expect((await runTick(db, n, new Date("2026-11-19T18:05:00Z"))).fired).toBe(0); // nothing added Nov 18
+  });
+
+  it("does not count entries in sections the follower cannot see", async () => {
+    const { ann, bob, jurnal, section, note } = await follow();
+    const secret = await addSection(db, ann.id, jurnal.id, "Diary");
+    await updateSection(db, ann.id, secret.id, { protected: true });
+    const diary = await addMetric(db, ann.id, secret.id, { name: "D", fieldType: "text" });
+    await createDigestRule(db, bob.id, { jurnalId: jurnal.id });
+    await backdate();
+    await createEntry(db, ann.id, secret.id, { effectiveDate: "2026-11-18", values: { [diary.id]: "private" } }, new Date("2026-11-18T15:00:00Z"));
+    const n = new RecordingNotifier();
+    expect((await runTick(db, n, new Date("2026-11-19T18:05:00Z"))).fired).toBe(0);
+    await added(ann, section.id, note.id, "2026-11-18", "2026-11-18T17:00:00Z");
+    const fired = await runTick(db, n, new Date("2026-11-19T18:10:00Z"));
+    expect(fired.fired).toBe(1);
+    expect(JSON.stringify(n.sent)).not.toContain("private");
+    expect(n.sent[0].payload.body).toBe("Fitness: 1 new entry yesterday");
+  });
+
+  it("never shows up as an overdue banner", async () => {
+    const { ann, bob, jurnal, section, note } = await follow();
+    await createDigestRule(db, bob.id, { jurnalId: jurnal.id });
+    await backdate();
+    await added(ann, section.id, note.id, "2026-11-18", "2026-11-18T15:00:00Z");
+    await runTick(db, new RecordingNotifier(), new Date("2026-11-19T18:05:00Z"));
+    expect(await getOverdue(db, bob.id, new Date("2026-11-19T18:10:00Z"))).toEqual([]);
+  });
+
+  it("is deleted when access is withdrawn, kept when only the alert permission is, and listed for the owner", async () => {
+    const { ann, bob, jurnal } = await follow();
+    await createDigestRule(db, bob.id, { jurnalId: jurnal.id });
+    expect((await listAlertsOnMyJurnal(db, ann.id, jurnal.id)).map((a) => [a.followerName, a.rule.kind])).toEqual([["Bob", "follower_digest"]]);
+    const [g] = await listGrants(db, ann.id, jurnal.id);
+    await updateGrantOptions(db, ann.id, g.grant.id, { canAlert: false });
+    expect(await listAlertsOnMyJurnal(db, ann.id, jurnal.id)).toHaveLength(1);
+    await revokeGrant(db, ann.id, g.grant.id);
+    expect(await listAlertsOnMyJurnal(db, ann.id, jurnal.id)).toHaveLength(0);
   });
 });

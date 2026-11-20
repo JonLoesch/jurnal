@@ -110,10 +110,15 @@ export default async function SharingPage({
 
       <section className={`${card} space-y-2`}>
         <h2 className="font-semibold">Alerts others have set on this jurnal</h2>
-        {alerts.length === 0 && <p className="text-sm text-neutral-500">None. People you allow to set alerts are notified, not you, when this goes quiet.</p>}
+        {alerts.length === 0 && <p className="text-sm text-neutral-500">None. Followers can ask for a daily count of new entries; people you allow to set alerts are also told when this goes quiet. Only they are notified, never you.</p>}
         <ul className="text-sm">
           {alerts.map(({ rule, followerName }) => (
-            <li key={rule.id}>{followerName}: notified after {(rule.config as { days: number }).days} days with nothing logged</li>
+            <li key={rule.id}>
+              {followerName}:{" "}
+              {rule.kind === "follower_digest"
+                ? `gets a daily count of new entries (at ${(rule.config as { notifyAt: string }).notifyAt})`
+                : `notified after ${(rule.config as { days: number }).days} days with nothing logged`}
+            </li>
           ))}
         </ul>
       </section>

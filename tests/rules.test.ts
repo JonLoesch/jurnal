@@ -15,6 +15,7 @@ const self = (over: Partial<RuleInput> = {}): RuleInput => ({
   subjectWeekStart: 1,
   recipientTz: NY,
   entryDates: [],
+  addedDates: [],
   baselineDate: "2026-11-01",
   label: "Morning",
   ...over,
@@ -121,5 +122,46 @@ describe("follower absence rules", () => {
 
   it("ignores a self-kind rule evaluated as absence", () => {
     expect(evaluateRule({ ...absence(1), kind: "self" }).due).toBe(false);
+  });
+});
+
+describe("follower digest rules", () => {
+  const digest = (addedDates: string[], over: Partial<RuleInput> = {}): RuleInput => ({
+    ...self(),
+    kind: "follower_digest",
+    config: { type: "digest", notifyAt: "10:00" },
+    addedDates,
+    ...over,
+  });
+
+  it("is due once yesterday's additions exist and the delivery hour has come", () => {
+    const r = evaluateRule(digest(["2026-11-18", "2026-11-18", "2026-11-17"]));
+    expect(r.due).toBe(true);
+    if (r.due) {
+      expect(r.dedupeKey).toBe("digest:2026-11-18");
+      expect(r.message).toBe("Morning: 2 new entries yesterday");
+    }
+  });
+
+  it("says entry, not entries, for one", () => {
+    const r = evaluateRule(digest(["2026-11-18"]));
+    if (r.due) expect(r.message).toBe("Morning: 1 new entry yesterday");
+  });
+
+  it("is not due with nothing added yesterday, or before the delivery hour", () => {
+    expect(evaluateRule(digest([])).due).toBe(false);
+    expect(evaluateRule(digest(["2026-11-19"])).due).toBe(false); // today's additions wait until tomorrow
+    expect(evaluateRule(digest(["2026-11-18"], { now: at("2026-11-19T14:59:00Z") })).due).toBe(false); // 09:59
+  });
+
+  it("delivers at the recipient's hour, counting days in the subject's timezone", () => {
+    // Recipient in Los Angeles: 10:05 there is 18:05Z.
+    const input = digest(["2026-11-18"], { recipientTz: "America/Los_Angeles" });
+    expect(evaluateRule({ ...input, now: at("2026-11-19T15:30:00Z") }).due).toBe(false); // 07:30 LA
+    expect(evaluateRule({ ...input, now: at("2026-11-19T18:05:00Z") }).due).toBe(true);
+  });
+
+  it("only applies to follower_digest rules", () => {
+    expect(evaluateRule(digest(["2026-11-18"], { kind: "self" })).due).toBe(false);
   });
 });
