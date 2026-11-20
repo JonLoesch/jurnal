@@ -159,6 +159,9 @@ AI only
 
 ## Later, no date
 
+- **Clean up orphaned photos automatically**: removing a log line, or replacing a photo, leaves its file in Blob
+  storage and its row in `asset`. A periodic job should delete assets no entry value references and their files.
+  Far later; the cost is a few hundred KB per orphan.
 - Extra notification channels (email via Resend, which he already has a key for; Slack; Discord; SMS).
 - Google Play via a wrapper (punted until further notice).
 - Organizations as jurnal owners (the data model already allows it).
