@@ -11,8 +11,13 @@ Sources: the v2 plan (`docs/plan.md`), what we hit while deploying, and the diet
 (`~/notes/areas/fitness/jurnal.md`, raw messages from 2026-11-19 to 2026-11-20 10:41, plus the coach's sheet
 conventions in that folder's `CLAUDE.md`). The fitness data is what the app has to hold, so it drives the order.
 
-**Already built since v2.0:** account deletion, Blob photo storage, and new-entry digests for followers (see
-"2.2" below; the code is done, only a real second user is missing).
+**Already built since v2.0** (local, waiting for a push and deploy; see git log):
+- Account deletion, Blob photo storage, new-entry digests for followers.
+- **Running-log metric** (`log` type): timestamped lines added through the day, with photos, one entry per day.
+- **MCP endpoint** (`/api/mcp`) with personal access tokens made in Settings: scopes read / make and edit entries /
+  edit jurnals, sections and metrics; one year default expiry (1 to 1095 days); revocable; hashed at rest. Tools go
+  through the same access checks as the web app.
+- **Seed** for Jonathan's Fitness and Habits jurnals (`scripts/seed-jurnals.ts`, safe to rerun).
 
 ## Release split
 
@@ -75,7 +80,7 @@ Mixed
 - [ ] **Import the fitness history** (jurnal.md and the sheet's Day 1 and Day 2). Needs his decision on how to map it
       (below), a review of the draft, and optionally the 8 photos copied from `~/.claude/uploads`. AI writes the
       import script and runs it locally, then against production only on his go.
-- [ ] **Set up his real jurnals and reminders** in production: Diet and Fitness (and a Diary), sections for
+- [ ] **Reminders for his real jurnals** (the jurnals themselves are seeded; reminders are not, since he has not said when): Diet and Fitness (and a Diary), sections for
       morning, midday and evening, and self reminders at the times he actually forgets. This is configuration, but
       it needs him to say which times and which metrics. Dogfood for a week; what annoys him shapes the rest.
 - [ ] **Try the alert toast, snooze and dismiss on the phone** (the push itself is verified; these paths are not).
