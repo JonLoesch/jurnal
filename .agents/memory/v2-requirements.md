@@ -41,3 +41,4 @@ Decisions so far (planning stage, nothing built):
 
 **Why:** Jonathan keeps missing diet journal entries; the app should record and remind. See [[project-context]].
 **How to apply:** treat these as settled unless he reopens them; open items are the stack choice, data model and the market survey result.
+- **Branching (2026-11-20):** this repo uses only `main` (deploys) and `development` (work). No feature branches. Agents commit on `development`; he pushes and merges.
