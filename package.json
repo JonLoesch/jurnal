@@ -42,5 +42,8 @@
     "vitest": "^5.1.1"
   },
   "packageManager": "pnpm@11.1.3",
+  "engines": {
+    "node": "22.x"
+  },
   "license": "AGPL-3.0-only"
 }
