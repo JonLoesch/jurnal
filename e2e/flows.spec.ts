@@ -199,3 +199,34 @@ test("AI access: make a token in Settings, see it once, and revoke it", async ({
   });
   expect(after.status()).toBe(401);
 });
+
+test("running log: lines pile up through the day with their times, and a photo rides along", async ({ browser }) => {
+  const page = await newUser(browser, "Lena");
+  await page.getByPlaceholder("New jurnal").fill("Day");
+  await page.getByRole("button", { name: "Create" }).click();
+  await expect(page.getByRole("heading", { name: "Day" })).toBeVisible();
+  const jid = page.url().split("/j/")[1];
+
+  await page.goto(`/j/${jid}/settings`);
+  await page.getByPlaceholder("e.g. Sleep").fill("Diet");
+  await page.locator('select[name="fieldType"]').selectOption("log");
+  await page.getByRole("button", { name: "Add", exact: true }).first().click();
+  await expect(page.getByText("Diet", { exact: true }).first()).toBeVisible();
+
+  await page.goto(`/j/${jid}`);
+  await page.getByPlaceholder("Add a line").fill("oatmeal and raspberries");
+  await page.getByRole("button", { name: "Add line" }).click();
+  await expect(page.getByText("oatmeal and raspberries")).toBeVisible();
+
+  await page.getByPlaceholder("Add a line").fill("cheddar, two ounces ish");
+  await page.locator('input[type="file"]').first().setInputFiles("public/icon-192.png");
+  await page.getByRole("button", { name: "Add line" }).click();
+  await expect(page.getByText("cheddar, two ounces ish")).toBeVisible();
+  await expect(page.getByText("oatmeal and raspberries")).toBeVisible(); // still there: one day, one entry
+  await expect(page.locator("main img").first()).toBeVisible();
+  await expect(page.getByText(/\d{1,2}:\d{2}\s?[AP]M/).first()).toBeVisible();
+
+  await page.getByRole("button", { name: "remove" }).first().click();
+  await expect(page.getByText("oatmeal and raspberries")).toHaveCount(0);
+  await expect(page.getByText("cheddar, two ounces ish")).toBeVisible();
+});
