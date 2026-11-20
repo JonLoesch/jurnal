@@ -2,6 +2,9 @@ import { devLoginEnabled, googleEnabled } from "@/auth";
 import { button, input } from "../_components";
 import { devSignInAction, googleSignInAction } from "../actions";
 
+// Read env at request time: a prerendered page would bake in whatever was set at build.
+export const dynamic = "force-dynamic";
+
 export default function LoginPage() {
   return (
     <div className="mx-auto max-w-sm space-y-6 py-10">
