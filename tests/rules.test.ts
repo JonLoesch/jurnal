@@ -53,6 +53,15 @@ describe("self deadline rules", () => {
     expect(evaluateRule(self({ now: at("2026-11-19T07:30:00Z"), subjectTz: "Asia/Tokyo" })).due).toBe(true);
   });
 
+  it("with forDay previous, checks yesterday at the deadline today", () => {
+    const prev = { config: { type: "deadline" as const, deadline: "10:00", forDay: "previous" as const } };
+    const r = evaluateRule(self({ ...prev, entryDates: ["2026-11-19"] }));
+    expect(r.due).toBe(true);
+    if (r.due) expect(r.dedupeKey).toBe("day:2026-11-18:1");
+    expect(evaluateRule(self({ ...prev, entryDates: ["2026-11-18"] })).due).toBe(false);
+    expect(evaluateRule(self({ ...prev, now: at("2026-11-19T14:59:00Z") })).due).toBe(false); // 09:59
+  });
+
   it("skips days a weekday schedule does not expect", () => {
     const wk = { schedule: SHORTCUTS.weekdays };
     expect(evaluateRule(self({ ...wk, now: at("2026-11-21T15:30:00Z") })).due).toBe(false); // Saturday

@@ -22,7 +22,7 @@ type Rule = typeof reminderRules.$inferSelect;
 export async function createSelfRule(
   db: Db,
   accountId: string,
-  input: { jurnalId: string; sectionId?: string | null; deadline: string },
+  input: { jurnalId: string; sectionId?: string | null; deadline: string; forDay?: "previous" },
 ) {
   const { allSections } = await requireOwner(db, accountId, input.jurnalId);
   if (!isHHMM(input.deadline)) throw new UserError("Deadline should look like 10:00");
@@ -34,7 +34,7 @@ export async function createSelfRule(
       jurnalId: input.jurnalId,
       sectionId: input.sectionId ?? null,
       kind: "self",
-      config: { type: "deadline", deadline: input.deadline },
+      config: { type: "deadline", deadline: input.deadline, ...(input.forDay === "previous" ? { forDay: "previous" as const } : {}) },
     })
     .returning();
   return r;

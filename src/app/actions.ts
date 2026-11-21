@@ -187,6 +187,7 @@ export async function updateMetricAction(f: FormData) {
     j.updateMetric(db(), id, need(f, "metricId"), {
       protected: f.has("protectedPresent") ? f.get("protected") === "on" : undefined,
       archived: f.has("archived") ? f.get("archived") === "yes" : undefined,
+      fieldType: f.get("toNotes") === "yes" ? "richtext" : undefined,
     }),
   );
 }
@@ -391,7 +392,7 @@ export async function createSelfRuleAction(f: FormData) {
   const id = await requireAccountId();
   const jid = need(f, "jurnalId");
   await run(`/j/${jid}/settings`, async () => {
-    await al.createSelfRule(db(), id, { jurnalId: jid, sectionId: str(f, "sectionId") || null, deadline: need(f, "deadline") });
+    await al.createSelfRule(db(), id, { jurnalId: jid, sectionId: str(f, "sectionId") || null, deadline: need(f, "deadline"), forDay: str(f, "forDay") === "previous" ? "previous" : undefined });
   });
 }
 

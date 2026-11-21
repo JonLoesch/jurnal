@@ -90,7 +90,7 @@ export default async function AccountSettings({ searchParams }: { searchParams: 
 
 function ruleSummary(rule: { kind: string; config: unknown }) {
   const c = rule.config as { deadline?: string; days?: number; notifyAt?: string };
-  if (rule.kind === "self") return `log by ${c.deadline}`;
+  if (rule.kind === "self") return `log by ${c.deadline}${(c as { forDay?: string }).forDay === "previous" ? " the next day" : ""}`;
   if (rule.kind === "follower_digest") return `daily summary of new entries at ${c.notifyAt}`;
   return `tell me after ${c.days} quiet days`;
 }

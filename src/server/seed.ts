@@ -56,7 +56,7 @@ export const MY_JURNALS: JurnalDef[] = [
       {
         name: "Morning",
         schedule: daily,
-        metrics: [yes("Stretched"), yes("Woke up at a reasonable time"), yes("Made a plan for the day"), yes("Got some early sun"), { name: "Notes", type: "text" }],
+        metrics: [yes("Stretched"), yes("Woke up at a reasonable time"), yes("Made a plan for the day"), yes("Got some early sun"), notes],
       },
       {
         name: "Evening",
@@ -65,7 +65,7 @@ export const MY_JURNALS: JurnalDef[] = [
           yes("Brushed my teeth"),
           yes("Got the things done I wanted to get done"),
           yes("Closed down my work at a reasonable time"),
-          { name: "Notes", type: "text" },
+          notes,
         ],
       },
     ],

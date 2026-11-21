@@ -48,6 +48,29 @@ describe("jurnals, sections and metrics", () => {
 });
 
 describe("entries", () => {
+  it("saving again on a once-a-day section changes that day's entry instead of adding a second", async () => {
+    const { ann, jurnal, section, weight, note } = await setup();
+    const now = new Date("2026-11-05T15:00:00Z");
+    const first = await createEntry(db, ann.id, section.id, { values: { [weight.id]: 80 } }, now);
+    const again = await createEntry(db, ann.id, section.id, { values: { [note.id]: "felt good" } }, now);
+    expect(again.id).toBe(first.id);
+    const { feed } = await getFeed(db, jurnal.id, { accountId: ann.id });
+    expect(feed).toHaveLength(1);
+    expect(feed[0].values).toHaveLength(2);
+    await createEntry(db, ann.id, section.id, { values: { [weight.id]: 81 } }, now);
+    const after = (await getFeed(db, jurnal.id, { accountId: ann.id })).feed;
+    expect(after[0].values.find((v) => v.metricId === weight.id)?.value).toBe(81);
+  });
+
+  it("turns a short-text metric into notes, keeping its values", async () => {
+    const { ann, jurnal, section, note } = await setup();
+    await createEntry(db, ann.id, section.id, { values: { [note.id]: "hello" } });
+    await updateMetric(db, ann.id, note.id, { fieldType: "richtext" });
+    const { feed } = await getFeed(db, jurnal.id, { accountId: ann.id });
+    expect(feed[0].values[0].value).toEqual({ text: "hello", assetIds: [] });
+    await expect(updateMetric(db, ann.id, note.id, { fieldType: "number" })).rejects.toThrow(/short text/);
+  });
+
   it("defaults to today in the author's timezone", async () => {
     const { ann, section, weight } = await setup();
     // 02:30 UTC on Nov 5 is still Nov 4 in New York.

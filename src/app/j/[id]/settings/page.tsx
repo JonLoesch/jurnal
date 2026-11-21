@@ -101,6 +101,13 @@ export default async function SettingsPage({ params, searchParams }: { params: P
                     <label className="flex items-center gap-1 text-xs"><input type="checkbox" name="protected" defaultChecked={m.protected} /> Protected</label>
                     <button className={linkButton}>Update</button>
                   </form>
+                  {m.fieldType === "text" && (
+                    <form action={updateMetricAction}>
+                      <input type="hidden" name="jurnalId" value={id} /><input type="hidden" name="metricId" value={m.id} />
+                      <input type="hidden" name="toNotes" value="yes" />
+                      <button className={linkButton}>Make it notes (multi-line, photos)</button>
+                    </form>
+                  )}
                   <form action={updateMetricAction}>
                     <input type="hidden" name="jurnalId" value={id} /><input type="hidden" name="metricId" value={m.id} />
                     <input type="hidden" name="archived" value={m.archivedAt ? "no" : "yes"} />
@@ -150,6 +157,7 @@ export default async function SettingsPage({ params, searchParams }: { params: P
               <span>
                 {rule.sectionId ? allSections.find((s) => s.id === rule.sectionId)?.name : "Whole jurnal"}: log by{" "}
                 {(rule.config as { deadline: string }).deadline}
+                {(rule.config as { forDay?: string }).forDay === "previous" ? " the next day" : ""}
               </span>
               <form action={deleteRuleAction}>
                 <input type="hidden" name="ruleId" value={rule.id} /><input type="hidden" name="back" value={`/j/${id}/settings`} />
@@ -163,7 +171,8 @@ export default async function SettingsPage({ params, searchParams }: { params: P
           <input type="hidden" name="jurnalId" value={id} />
           <label>For<br /><select name="sectionId" className={input}><option value="">Whole jurnal</option>
             {shownSections.filter((s) => !s.archivedAt).map((s) => <option key={s.id} value={s.id}>{s.isDefault ? "Entries" : s.name}</option>)}</select></label>
-          <label>If nothing is logged by<br /><input type="time" name="deadline" defaultValue="10:00" className={input} /></label>
+          <label>If nothing is logged<br /><select name="forDay" className={input}><option value="">that day, by</option><option value="previous">the day before, by</option></select></label>
+          <label>Time<br /><input type="time" name="deadline" defaultValue="10:00" className={input} /></label>
           <button className={button}>Add reminder</button>
         </form>
         <p className="text-xs text-neutral-500">Times use your account timezone. Turn on notifications under Settings.</p>

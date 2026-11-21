@@ -165,7 +165,7 @@ export async function updateMetric(
   db: Db,
   accountId: string,
   metricId: string,
-  patch: { name?: string; protected?: boolean; archived?: boolean; config?: Record<string, unknown> },
+  patch: { name?: string; protected?: boolean; archived?: boolean; config?: Record<string, unknown>; fieldType?: FieldType },
 ) {
   const [row] = await db
     .select({ metric: metrics, jurnalId: sections.jurnalId })
@@ -185,9 +185,21 @@ export async function updateMetric(
     if (err) throw new UserError(err);
     set.config = patch.config;
   }
+  // Short text can grow into notes (multi-line, with photos); existing values become the note text.
+  const toNotes = patch.fieldType === "richtext" && row.metric.fieldType === "text";
+  if (patch.fieldType !== undefined && patch.fieldType !== row.metric.fieldType && !toNotes)
+    throw new UserError("Only short text can be changed to notes");
+  if (toNotes) set.fieldType = "richtext";
   // Archiving hides the metric from new entries; its values stay and remain chartable.
   if (patch.archived !== undefined) set.archivedAt = patch.archived ? new Date() : null;
-  if (Object.keys(set).length) await db.update(metrics).set(set).where(eq(metrics.id, metricId));
+  await db.transaction(async (tx) => {
+    if (Object.keys(set).length) await tx.update(metrics).set(set).where(eq(metrics.id, metricId));
+    if (toNotes)
+      await tx
+        .update(entryValues)
+        .set({ value: sql`jsonb_build_object('text', ${entryValues.value} #>> '{}', 'assetIds', '[]'::jsonb)` })
+        .where(and(eq(entryValues.metricId, metricId), sql`jsonb_typeof(${entryValues.value}) = 'string'`));
+  });
 }
 
 // ---------- entries ----------
@@ -237,6 +249,34 @@ export async function createEntry(db: Db, accountId: string, sectionId: string, 
   const { date, time } = resolveWhen(subject.timezone, now, input);
   const vals = await checkedValues(db, sectionId, input.values);
   if (vals.length === 0) throw new UserError("Fill in at least one field");
+  // A once-a-day section has one entry per day: saving again fills in or changes that entry, never a second one.
+  const sch = section.schedule;
+  if (!sch || (sch.period === "day" && sch.count === 1 && !sch.times)) {
+    const [existing] = await db
+      .select()
+      .from(entries)
+      .where(and(eq(entries.sectionId, sectionId), eq(entries.effectiveDate, date)))
+      .orderBy(asc(entries.addedAt))
+      .limit(1);
+    if (existing) {
+      await db.transaction(async (tx) => {
+        const old = await tx.select().from(entryValues).where(eq(entryValues.entryId, existing.id));
+        for (const v of vals) {
+          const prev = old.find((o) => o.metricId === v.metricId)?.value as { assetIds?: string[] } | undefined;
+          const value =
+            prev?.assetIds?.length && v.value && typeof v.value === "object" && "text" in v.value
+              ? { ...v.value, assetIds: prev.assetIds }
+              : v.value;
+          await tx
+            .insert(entryValues)
+            .values({ entryId: existing.id, metricId: v.metricId, value, valueNum: v.num })
+            .onConflictDoUpdate({ target: [entryValues.entryId, entryValues.metricId], set: { value, valueNum: v.num } });
+        }
+        await tx.update(entries).set({ updatedAt: now }).where(eq(entries.id, existing.id));
+      });
+      return existing;
+    }
+  }
   return db.transaction(async (tx) => {
     const [entry] = await tx
       .insert(entries)

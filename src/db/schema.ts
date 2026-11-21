@@ -257,6 +257,6 @@ export const apiTokens = pgTable("api_token", {
 });
 
 export type RuleConfig =
-  | { type: "deadline"; deadline: string } // self: log by HH:MM in the subject's timezone
+  | { type: "deadline"; deadline: string; forDay?: "previous" } // self: log by HH:MM in the subject's timezone; "previous" checks yesterday's entries at that time today
   | { type: "absence"; days: number; notifyAt: string } // follower: N complete silent days
   | { type: "digest"; notifyAt: string }; // follower: a daily summary of entries added yesterday

@@ -84,6 +84,20 @@ export function evaluateRule(i: RuleInput): RuleResult {
     };
   }
 
+  // "previous": the day being checked is yesterday, and the deadline is a time today (a morning nudge about
+  // what was missed, not a nag before the day has happened).
+  if (i.config.forDay === "previous") {
+    const day = addDays(today, -1);
+    const n = i.entryDates.filter((d) => d === day).length;
+    if (!expectedOn(schedule, day) || n >= schedule.count || !pastTimeToday(i.subjectTz, i.now, deadline)) return { due: false };
+    return {
+      due: true,
+      dedupeKey: `day:${day}:${n + 1}`,
+      message: `${i.label}: nothing logged yesterday`,
+      lastEffectiveDate: last,
+    };
+  }
+
   if (!expectedOn(schedule, today)) return { due: false };
   const slots = slotsDue(schedule, deadline, minutesOf(timeIn(i.subjectTz, i.now)));
   if (slots === 0 || todayCount >= slots) return { due: false };
